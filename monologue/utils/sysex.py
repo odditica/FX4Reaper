@@ -269,6 +269,7 @@ def analyse_sysex(buf):
     CCLFOTarget = value
     print("LFO Target: " + str(CCLFOTarget))
 
+
 while True:
     try:
         with mido.open_input('monologue 1 KBD/KNOB 1') as inport:
