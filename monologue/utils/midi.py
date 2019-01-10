@@ -1,7 +1,6 @@
 from misc import *
 import mido
 
-
 while True:
     msg_a = None
     msg_b = None    
@@ -12,10 +11,10 @@ while True:
         with mido.open_input('monologue 1 KBD/KNOB 1') as inport:
             for msg in inport:
                 if (msg.type == 'control_change' and msg.control not in seen):                
-                    print("CC(" + str(msg.control) + ") ", end='')
+                    print("CC(" + str(msg.control) + ") ", end='', flush=True)
                     seen.append(msg.control)
                 if (msg.type == 'program_change' and "PC" not in seen):                
-                    print("PC ", end='')
+                    print("PC ", end='', flush=True)
                     seen.append("PC")
                 if (msg.type == 'sysex'):
                     if (msg_a  == None):
@@ -61,4 +60,3 @@ while True:
     except OSError:
         print("Device not connected.")
         break
-            
