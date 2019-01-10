@@ -1,274 +1,392 @@
-from reportlab.lib.validators import isNumberInRange
-
+from enum import Enum
 from misc import *
 import mido
 
-def canParseFromHex(s):
+def can_parse_from_hex(s):
     try:
         int(s, 16)
         return True
     except ValueError:
         return False
 
+class MonoPatch:
 
-def analyse_sysex(buf):
-    #print(buf)
-    buf = [int(x, 16) for x in buf.split() if canParseFromHex(x)]
+    class VCO1Wave(Enum):
+        SQUARE = 0
+        TRIANGLE = 1
+        SAW = 2
 
-    # Name (12*8 bits)
-    # Byte 12 - 22
-    # Byte 24 - 25
+    class VCO2Wave(Enum):
+        NOISE = 0
+        TRIANGLE = 1
+        SAW = 2
 
-    offset = 12
-    name = ""
-    for i in range(0, 11):
-        name += chr(buf[offset + i])
-    offset = 24
-    for i in range(0, 1):
-        name += chr(buf[offset + i])
-    print("Name: " + name)
-    # Overdrive (10 bits)
-    # Byte 39     - bit 2
-    # Byte 39 + 2 - bits 1 - 7
-    # Byte 39 + 8 - bit 1
-    # Byte 39 + 9 - bit 7
+    class RingSync(Enum):
+        RING = 0
+        OFF = 1
+        SYNC = 2
 
-    offset = 39
-    value = ((buf[offset] & 2) << 8)
-    value = value | ((buf[offset + 2] & 127) << 2)
-    value = value | ((buf[offset + 8] & 1) << 1)
-    value = value | ((buf[offset + 9] & 64) >> 6)
-    CCDrive = value
-    print("Drive: " + str(value))
+    class EGType(Enum):
+        GATE = 0
+        AGD = 1
+        AD = 2
 
-    # VCO1 Wave (2 bits)
-    # Byte 39 - bit 3
-    # Byte 39 + 3 - bit 7
+    class EGTarget(Enum):
+        CUTOFF = 0
+        PITCH2 = 1
+        PITCH = 2
 
-    offset = 39
-    value = ((buf[offset] & 4) >> 1)
-    value = value | ((buf[offset + 3] & 64) >> 6)
-    CCVCO1Wave = value
-    print("VCO1 Waveform: " + str(CCVCO1Wave))
+    class LFOWave(Enum):
+        SQUARE = 0
+        TRIANGLE = 1
+        SAW = 2
 
+    class LFOMode(Enum):
+        ONESHOT = 0
+        SLOW = 1
+        FAST = 2
 
-    # VCO1 Shape (10 bits)
-    # Byte 24      - bit 4
-    # Byte 24 + 4  - bit 1-7
-    # Byte 24 + 19 - bit 3-4
+    class LFOTarget(Enum):
+        CUTOFF = 0
+        SHAPE = 1
+        PITCH = 2
 
-    offset = 23
-    value = ((buf[offset] & 8) << 6)
-    value = value | ((buf[offset + 4] & 127) << 2)
-    value = value | ((buf[offset + 19] & 12) >> 2)
-    CCVCO1Shape = value
-    print("VCO1 Shape: " + str(CCVCO1Shape))
+    def __init__(self):
+        self.drive = 0
+        self.vco1_wave = MonoPatch.VCO1Wave.SAW
+        self.vco1_shape = 0
+        self.vco2_octave = 0
+        self.vco2_wave = MonoPatch.VCO2Wave.NOISE
+        self.ring_sync = MonoPatch.RingSync.OFF
+        self.vco2_shape = 0
+        self.vco2_pitch = 0
+        self.vco1_level = 1023
+        self.vco2_level = 0
+        self.filter_cutoff = 1024
+        self.filter_resonance = 0
+        self.eg_type = MonoPatch.EGType.AD
+        self.eg_attack = 0
+        self.eg_decay = 1024
+        self.eg_intensity = 0
+        self.eg_target = MonoPatch.EGTarget.CUTOFF
+        self.lfo_wave = MonoPatch.LFOWave.SAW
+        self.lfo_mode = MonoPatch.LFOMode.SLOW
+        self.lfo_rate = 0
+        self.lfo_intensity = 0
+        self.lfo_target = MonoPatch.LFOTarget.SHAPE
+        self.name = "Init Program"
 
-    # VCO2 Octave (2 bits)
-    # Byte 43 - bit 5-6
+        self.seq_bpm = 120
 
-    offset = 43
-    value = (buf[offset] & 48) >> 4
-    CCVCO2Octave = value
-    print("VCO2 Octave: " + str(CCVCO2Octave))
+    def decode_sysex(self, buf):
+        #print(buf)
 
-    # VCO2 Wave (2 bits)
-    # Byte 39 - bit 4
-    # Byte 39 + 4 - bit 7
+        buf = [int(x, 16) for x in buf.split() if can_parse_from_hex(x)]
 
-    offset = 39
-    value = ((buf[offset] & 8) >> 2)
-    value = value | ((buf[offset + 4] & 64) >> 6)
-    CCVCO2Wave = value
-    print("VCO1 Waveform: " + str(CCVCO2Wave))
+        # Name (12*8 bits)
+        # Byte 12 - 22
+        # Byte 24 - 25
 
-    # Ring/Sync (2 bits)
-    # Byte 39 - bit 1-2
+        offset = 12
+        self.name = ""
+        for i in range(0, 11):
+            self.name += chr(buf[offset + i])
+        offset = 24
+        for i in range(0, 2):
+            self.name += chr(buf[offset + i])
 
-    offset = 44
-    value = (buf[offset] & 3)
+        # Drive (10 bits)
+        # Byte 39     - bit 2
+        # Byte 39 + 2 - bits 1 - 7
+        # Byte 39 + 8 - bit 1
+        # Byte 39 + 9 - bit 7
 
-    CCRingSync = value
-    print("Ring/Sync: " + str(CCRingSync))
+        offset = 39
+        value = ((buf[offset] & 2) << 8)
+        value = value | ((buf[offset + 2] & 127) << 2)
+        value = value | ((buf[offset + 8] & 1) << 1)
+        value = value | ((buf[offset + 9] & 64) >> 6)
+        self.drive = value
 
-    # VCO2 Shape (10 bits)
-    # Byte 24      - bit 6
-    # Byte 24 + 6  - bit 1-7
-    # Byte 24 + 20 - bit 2-4
+        # VCO1 Wave (2 bits)
+        # Byte 39 - bit 3
+        # Byte 39 + 3 - bit 7
 
-    offset = 23
-    value = ((buf[offset] & 32) << 4)
-    value = value | ((buf[offset + 6] & 127) << 2)
-    value = value | ((buf[offset + 20] & 12) >> 2)
-    CCVCO2Shape = value
-    print("VCO2 Shape: " + str(CCVCO2Shape))
+        offset = 39
+        value = ((buf[offset] & 4) >> 1)
+        value = value | ((buf[offset + 3] & 64) >> 6)
+        self.vco1_wave = value
 
-    # VCO2 Pitch (10 bits)
-    # Byte 24      - bit 5
-    # Byte 24 + 5  - bit 1-7
-    # Byte 24 + 20 - bit 1-2
+        # VCO1 Shape (10 bits)
+        # Byte 24      - bit 4
+        # Byte 24 + 4  - bit 1-7
+        # Byte 24 + 19 - bit 3-4
 
-    offset = 23
-    value = ((buf[offset] & 16) << 5)
-    value = value | ((buf[offset + 5] & 127) << 2)
-    value = value | (buf[offset + 20] & 3)
-    CCVCO2Pitch = value
-    print("VCO2 Pitch: " + str(CCVCO2Pitch))
+        offset = 23
+        value = ((buf[offset] & 8) << 6)
+        value = value | ((buf[offset + 4] & 127) << 2)
+        value = value | ((buf[offset + 19] & 12) >> 2)
+        self.vco1_shape = value
 
-    # VCO1 Level (10 bits)
-    # Byte 23      - bit 7
-    # Byte 23 + 7  - bit 1-7
-    # Byte 23 + 22 - bit 1-2
+        # VCO2 Octave (2 bits)
+        # Byte 43 - bit 5-6
 
-    offset = 23
-    value = ((buf[offset] & 64) << 3)
-    value = value | ((buf[offset + 7] & 127) << 2)
-    value = value | (buf[offset + 22] & 3)
-    CCVCO1Level = value
-    print("VCO1 Level: " + str(CCVCO1Level))
-    
-    # VCO2 Level (10 bits)
-    # Byte 31      - bit 1
-    # Byte 31 + 1  - bit 1-7
-    # Byte 31 + 14 - bit 2-4
+        offset = 43
+        value = (buf[offset] & 48) >> 4
+        self.vco2_octave = value
 
-    offset = 31
-    value = ((buf[offset] & 1) << 9)
-    value = value | ((buf[offset + 1] & 127) << 2)
-    value = value | (buf[offset + 14] & 12) >> 2
-    CCVCO2Level = value
-    print("VCO2 Level: " + str(CCVCO2Level))
+        # VCO2 Wave (2 bits)
+        # Byte 39 - bit 4
+        # Byte 39 + 4 - bit 7
 
-    # Filter Cutoff (10 bits)
-    # Byte 31      - bit 2
-    # Byte 31 + 2  - bit 1-7
-    # Byte 31 + 14 - bit 5-6
+        offset = 39
+        value = ((buf[offset] & 8) >> 2)
+        value = value | ((buf[offset + 4] & 64) >> 6)
+        self.vco2_wave = value
 
-    offset = 31
-    value = (buf[offset] & 2) << 8
-    value = value | ((buf[offset + 2] & 127) << 2)
-    value = value | ((buf[offset + 14] & 48) >> 4)
-    CCFilterCutoff = value
-    print("Filter cutoff: " + str(CCFilterCutoff))
+        # Ring/Sync (2 bits)
+        # Byte 39 - bit 1-2
 
-    # Filter Resonance (10 bits)
-    # Byte 31      - bit 3
-    # Byte 31 + 3  - bit 1-7
-    # Byte 31 + 8  - bit 6
-    # Byte 31 + 14 - bit 7
+        offset = 44
+        value = (buf[offset] & 3)
+        self.ring_sync = value
 
-    offset = 31
-    value = (buf[offset] & 4) << 7
-    value = value | ((buf[offset + 3] & 127) << 2)
-    value = value | ((buf[offset + 8] & 32) >> 4)
-    value = value | ((buf[offset + 14] & 64) >> 6)
-    CCFilterResonance = value
-    print("Filter resonance: " + str(CCFilterResonance))
+        # VCO2 Shape (10 bits)
+        # Byte 24      - bit 6
+        # Byte 24 + 6  - bit 1-7
+        # Byte 24 + 20 - bit 2-4
 
-    # EG Type (2 bits)
-    # Byte 46       - bit 1-2
+        offset = 23
+        value = ((buf[offset] & 32) << 4)
+        value = value | ((buf[offset + 6] & 127) << 2)
+        value = value | ((buf[offset + 20] & 12) >> 2)
+        self.vco2_shape = value
 
-    offset = 46
-    value = (buf[offset] & 3)
-    CCEGType = value
-    print("EG Type: " + str(CCEGType))
+        # VCO2 Pitch (10 bits)
+        # Byte 24      - bit 5
+        # Byte 24 + 5  - bit 1-7
+        # Byte 24 + 20 - bit 1-2
 
-    # EG Attack (10 bits)
-    # Byte 31      - bit 4
-    # Byte 31 + 4  - bit 1-7
-    # Byte 31 + 15 - bit 2-4
+        offset = 23
+        value = ((buf[offset] & 16) << 5)
+        value = value | ((buf[offset + 5] & 127) << 2)
+        value = value | (buf[offset + 20] & 3)
+        self.vco2_pitch = value
 
-    offset = 31
-    value = (buf[offset] & 8) << 6
-    value = value | ((buf[offset + 4] & 127) << 2)
-    value = value | ((buf[offset + 15] & 12) >> 2)
-    CCEGAttack = value
-    print("EG Attack: " + str(CCEGAttack))
+        # VCO1 Level (10 bits)
+        # Byte 23      - bit 7
+        # Byte 23 + 7  - bit 1-7
+        # Byte 23 + 22 - bit 1-2
 
-    # EG Decay (10 bits)
-    # Byte 31      - bit 5
-    # Byte 31 + 5  - bit 1-7
-    # Byte 31 + 15 - bit 5-6
+        offset = 23
+        value = ((buf[offset] & 64) << 3)
+        value = value | ((buf[offset + 7] & 127) << 2)
+        value = value | (buf[offset + 22] & 3)
+        self.vco1_level = value
 
-    offset = 31
-    value = (buf[offset] & 16) << 5
-    value = value | ((buf[offset + 5] & 127) << 2)
-    value = value | ((buf[offset + 15] & 48) >> 4)
-    CCEGDecay = value
-    print("EG Decay: " + str(CCEGDecay))
+        # VCO2 Level (10 bits)
+        # Byte 31      - bit 1
+        # Byte 31 + 1  - bit 1-7
+        # Byte 31 + 14 - bit 2-4
 
-    # EG Intensity (10 bits)
-    # Byte 31      - bit 6
-    # Byte 31 + 6  - bit 1-7
-    # Byte 31 + 17 - bit 1-2
-    # (hold shift for negative values, max at 1022)
+        offset = 31
+        value = ((buf[offset] & 1) << 9)
+        value = value | ((buf[offset + 1] & 127) << 2)
+        value = value | (buf[offset + 14] & 12) >> 2
+        self.vco2_level = value
 
-    offset = 31
-    value = (buf[offset] & 32) << 4
-    value = value | ((buf[offset + 6] & 127) << 2)
-    value = value | ((buf[offset + 17] & 2))
-    CCEGIntensity = value
-    print("EG Intensity: " + str(CCEGIntensity))
+        # Filter Cutoff (10 bits)
+        # Byte 31      - bit 2
+        # Byte 31 + 2  - bit 1-7
+        # Byte 31 + 14 - bit 5-6
 
-    # EG Target (2 bits)
-    # Byte 39      - bit 7
-    # Byte 39 + 7  - bit 7
+        offset = 31
+        value = (buf[offset] & 2) << 8
+        value = value | ((buf[offset + 2] & 127) << 2)
+        value = value | ((buf[offset + 14] & 48) >> 4)
+        self.filter_cutoff = value
 
-    offset = 39
-    value = (buf[offset] & 64) >> 5
-    value = value | ((buf[offset + 7] & 64) >> 6)
-    CCEGTarget = value
-    print("EG Target: " + str(CCEGTarget))
+        # Filter Resonance (10 bits)
+        # Byte 31      - bit 3
+        # Byte 31 + 3  - bit 1-7
+        # Byte 31 + 8  - bit 6
+        # Byte 31 + 14 - bit 7
 
-    # LFO Wave (2 bits)
-    # Byte 49      - bit 1-2
+        offset = 31
+        value = (buf[offset] & 4) << 7
+        value = value | ((buf[offset + 3] & 127) << 2)
+        value = value | ((buf[offset + 8] & 32) >> 4)
+        value = value | ((buf[offset + 14] & 64) >> 6)
+        self.filter_resonance = value
 
-    offset = 49
-    value = (buf[offset] & 3)
-    CCLFOWave = value
-    print("LFO Wave: " + str(CCLFOWave))
+        # EG Type (2 bits)
+        # Byte 46       - bit 1-2
 
-    # LFO Mode (2 bits)
-    # Byte 49      - bit 2-4
+        offset = 46
+        value = (buf[offset] & 3)
+        self.eg_type = value
 
-    offset = 49
-    value = (buf[offset] & 12) >> 2
-    CCLFOMode = value
-    print("LFO Mode: " + str(CCLFOMode))
+        # EG Attack (10 bits)
+        # Byte 31      - bit 4
+        # Byte 31 + 4  - bit 1-7
+        # Byte 31 + 15 - bit 2-4
 
-    # LFO Rate (10 bits)
-    # Byte 31      - bit 7
-    # Byte 31 + 7  - bit 1-7
-    # Byte 31 + 17 - bit 2-4
+        offset = 31
+        value = (buf[offset] & 8) << 6
+        value = value | ((buf[offset + 4] & 127) << 2)
+        value = value | ((buf[offset + 15] & 12) >> 2)
+        self.eg_attack = value
 
-    offset = 31
-    value = (buf[offset] & 64) << 3
-    value = value | ((buf[offset + 7] & 127) << 2)
-    value = value | ((buf[offset + 17] & 12) >> 2)
-    CCLFORate = value
-    print("LFO Rate: " + str(CCLFORate))
+        # EG Decay (10 bits)
+        # Byte 31      - bit 5
+        # Byte 31 + 5  - bit 1-7
+        # Byte 31 + 15 - bit 5-6
 
-    # LFO Intensity (10 bits)
-    # Byte 39      - bit 1
-    # Byte 31 + 1  - bit 1-7
-    # Byte 31 + 9  - bit 6-7
-    # (hold shift for negative values, max at 1022)
+        offset = 31
+        value = (buf[offset] & 16) << 5
+        value = value | ((buf[offset + 5] & 127) << 2)
+        value = value | ((buf[offset + 15] & 48) >> 4)
+        self.eg_decay = value
 
-    offset = 39
-    value = (buf[offset] & 1)
-    value = value | ((buf[offset + 1] & 127) << 1)
-    value = value | ((buf[offset + 9] & 48) << 4)
-    CCLFOIntensity = value
-    print("LFO Intensity: " + str(CCLFOIntensity))
+        # EG Intensity (10 bits)
+        # Byte 31      - bit 6
+        # Byte 31 + 6  - bit 1-7
+        # Byte 31 + 17 - bit 1-2
+        # (hold shift for negative values)
 
-    # LFO Target (2 bits)
-    # Byte 49      - bit 5-6
+        offset = 31
+        value = (buf[offset] & 32) << 4
+        value = value | ((buf[offset + 6] & 127) << 2)
+        value = value | ((buf[offset + 17] & 3))
+        self.eg_intensity = value - 512
 
-    offset = 49
-    value = (buf[offset] & 48) >> 4
-    CCLFOTarget = value
-    print("LFO Target: " + str(CCLFOTarget))
+        # EG Target (2 bits)
+        # Byte 39      - bit 7
+        # Byte 39 + 7  - bit 7
 
+        offset = 39
+        value = (buf[offset] & 64) >> 5
+        value = value | ((buf[offset + 7] & 64) >> 6)
+        self.eg_target = value
+
+        # LFO Wave (2 bits)
+        # Byte 49      - bit 1-2
+
+        offset = 49
+        value = (buf[offset] & 3)
+        self.lfo_wave = value
+
+        # LFO Mode (2 bits)
+        # Byte 49      - bit 2-4
+
+        offset = 49
+        value = (buf[offset] & 12) >> 2
+        self.lfo_mode = value
+
+        # LFO Rate (10 bits)
+        # Byte 31      - bit 7
+        # Byte 31 + 7  - bit 1-7
+        # Byte 31 + 17 - bit 2-4
+
+        offset = 31
+        value = (buf[offset] & 64) << 3
+        value = value | ((buf[offset + 7] & 127) << 2)
+        value = value | ((buf[offset + 17] & 12) >> 2)
+        self.lfo_rate = value
+
+        # LFO Intensity (10 bits)
+        # Byte 39      - bit 1
+        # Byte 39 + 1  - bit 1-7
+        # Byte 39 + 9  - bit 6-7
+        # (hold shift for negative values)
+
+        offset = 39
+        value = (buf[offset] & 1) << 9
+        value = value | ((buf[offset + 1] & 127) << 2)
+        value = value | ((buf[offset + 9] & 48) >> 4)
+        self.lfo_intensity = value - 512
+
+        # LFO Target (2 bits)
+        # Byte 49      - bit 5-6
+
+        offset = 49
+        value = (buf[offset] & 48) >> 4
+        self.lfo_target = value
+
+        #68 ---xxxxx
+        #63 ----x---
+        #67 -xxxxxxx
+
+        # Tempo (13 bits)
+        # Byte 63      - bit 7
+        # Byte 67      - bit 1-7
+        # Byte 68      - bit 2-4
+
+        value = (buf[68] & 31) << 8
+        value = value | ((buf[63] & 8) << 4)
+        value = value | ((buf[67] & 127))
+        value /= 10
+        self.seq_bpm = value
+
+    def __str__(self):
+        #i love python
+        return (
+        """
+Name: %s
+============
+Drive: %d
+VCO1 Waveform: %s
+VCO1 Shape: %s
+VCO2 Octave: %s
+VCO1 Waveform: %s
+Ring/Sync: %s
+VCO2 Shape: %s
+VCO2 Pitch: %d
+VCO1 Level: %d
+VCO2 Level: %d
+Filter cutoff: %d
+Filter resonance: %d
+EG Type: %s
+EG Attack: %d 
+EG Decay: %d
+EG Intensity: %d
+EG Target: %s
+LFO Wave: %s
+LFO Mode: %s
+LFO Rate: %d
+LFO Intensity: %d
+LFO Target: %s
+
+Tempo: %d BPM
+        """
+        ) % (
+            self.name,
+            self.drive,
+            MonoPatch.VCO1Wave(self.vco1_wave).name,
+            self.vco1_shape,
+            str(2 << (3 - self.vco2_octave)) + "'",
+            MonoPatch.VCO2Wave(self.vco2_wave).name,
+            MonoPatch.RingSync(self.ring_sync).name,
+            self.vco2_shape,
+            self.vco2_pitch,
+            self.vco1_level,
+            self.vco2_level,
+            self.filter_cutoff,
+            self.filter_resonance,
+            MonoPatch.EGType(self.eg_type).name,
+            self.eg_attack,
+            self.eg_decay,
+            self.eg_intensity,
+            MonoPatch.EGTarget(self.eg_target).name,
+            MonoPatch.LFOWave(self.lfo_wave).name,
+            MonoPatch.LFOMode(self.lfo_mode).name,
+            self.lfo_rate,
+            self.lfo_intensity,
+            MonoPatch.LFOTarget(self.lfo_target).name,
+            self.seq_bpm
+        )
+
+program = MonoPatch()
 
 while True:
     try:
@@ -278,7 +396,8 @@ while True:
             for msg in inport:                
                 if msg.type == 'sysex' and len(msg.data) == 518:                    
                     print("OK")
-                    analyse_sysex(msg.hex())
+                    program.decode_sysex(msg.hex())
+                    print(program)
                     print("=====================================")
                     print_full("Waiting for message... ")
     except OSError:
