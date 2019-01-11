@@ -1,0 +1,1 @@
+﻿cp -r monoctrl $env:APPDATA\REAPER\Effects\blokatt\

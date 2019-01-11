@@ -1,4 +1,4 @@
-desc: Korg Monologue
+desc: MonoCtrl (Blokatt)
 //tags: korg monologue midi
 //author: Jan Vorisek
 
@@ -40,17 +40,54 @@ slider33:sEGTarget=0<0,1,3{Cutoff,Pitch 2,Pitch}>EG Target
 //================================//
 slider35:sDrive=0<0,127,1>Drive
 slider64:sSysex=0<0,1024,1>GotSysex
-@gfx gfx_w, 20
-gfx_clear = 4;
-gfx_r = 1.0;
-gfx_g = 1.0;
-gfx_b = 1.0;
-gfx_x = 0;
-gfx_y = 0;
-gfx_drawnumber(rand(100), 10);
-gfx_line(0,0,testval,10); 
 
+filename:0,logo.png
+filename:1,background.png
 
+@gfx gfx_w, 100
+  repeats = ceil(gfx_h / backH);
+  i = 0;
+  gfx_x = 0;
+  loop(repeats,   
+    gfx_y = backH * i;
+    gfx_blit(1, 1, 0);
+    i += 1;
+  );
+  
+  gfx_r = 1.0;
+  gfx_g = 1.0;
+  gfx_b = 1.0;
+  gfx_x = gfx_w - 10;
+  gfx_y = 0;
+  gfx_setfont(1, "Courier New", 20);
+  //gfx_drawnumber(rand(100), 10);
+  gfx_drawstr("Trigger:", 255);
+  //gfx_line(0,0,testval,10); 
+  gfx_rect(1, 1, gfx_w - 1, gfx_h - 1,0);
+ 
+  scale = 1;
+  gfx_x = 12;
+  gfx_y = 75 * scale;
+  gfx_setfont(1, "Courier New", 10);
+    //gfx_drawnumber(rand(100), 10);
+  gfx_drawstr("blokatt.net | @blokatt | 2019.", 255);
+  
+  gfx_x = 10 + sin(time_precise() * 5) * 2; 
+  gfx_y = gfx_h / 2 - 30;
+   
+  gfx_blit(0, scale, (rand(1) - .5) * .05);
+  gfx_mode = 1;
+  gfx_a = rand(1) * .4;
+  gfx_x = 165 / 2 - (73.5 * 1.1);
+  gfx_y = (gfx_h / 2 - 30) * 0.95;
+  gfx_blit(0, scale + 0.1, (rand(1) - .5) * .075);
+  gfx_a = 1;
+  gfx_mode = 0;
+  
+  //gfx_line(165 * scale, 0, 165 * scale, gfx_h);
+  
+  
+  
 @init
   ext_noinit = 1.0;   
   CCCount = 23;
@@ -76,22 +113,23 @@ gfx_line(0,0,testval,10);
       sliderCounter += 1;
       i;
   );
+  
   function invalidateCCSliders()
-      (
-          i = 1;
-          loop(CCCount, 
-            ccSliderOld[i] = -1;
-            i += 1;
-          ); 
-      );
+  (
+      i = 1;
+      loop(CCCount, 
+        ccSliderOld[i] = -1;
+        i += 1;
+      ); 
+  );
   function invalidateSliders()
-    (
-        i = 0;
-        loop(CCCount, 
-          ccSliderOld[i] = -1;
-          i += 1;
-        ); 
-    );
+  (
+      i = 0;
+      loop(CCCount, 
+        ccSliderOld[i] = -1;
+        i += 1;
+      ); 
+  );
   
   function sliderSpacing()
   (
@@ -99,72 +137,71 @@ gfx_line(0,0,testval,10);
   );
   
   function getSlider(id)
+  (
+    slider(ccSlider[id]);
+  );
+  
+  function randInt(x)
+  (
+    min(floor(rand(x + 1)), x);  
+  );
+  
+  function getSliderAutomate(id)
    (
-     slider(ccSlider[id]);
+     slider(ccSliderAutomateID[id]);
    );
-   
-   function randInt(x)
-   (
-     min(floor(rand(x + 1)), x);  
-   );
-   
-   function getSliderAutomate(id)
-    (
-      slider(ccSliderAutomateID[id]);
-    );
-   
-   function sendCC(ch, cc, val)
-   (
-     cc == -1 ? midisend(0, 0xc0 | ch, val) : midisend(0, 0xb0 | ch, cc, val);
-   );
-   
-   function sendUpdatedCC(ch, ccID, val)
-   (
-     getSlider(ccID) != ccSliderOld[ccID] ? sendCC(ch, cc[ccID], val);
-   );
-   
-   function updateCCParam(ccID, val)
-   (        
-       getSlider(ccID) = val;  
-       //slider_automate(slider(6)); 
-       slider_automate(getSliderAutomate(ccID));        
-   );
-   
-   function isSwitch(cc)
-   (
-     (cc == VCO2OctaveCC || cc == VCO1WaveCC || cc == VCO2WaveCC || cc == VCOModeCC ||cc ==  LFOWaveCC || cc == LFOModeCC || cc == LFOTargetCC || cc == EGTypeCC || cc == EGTargetCC);
-   ); 
-   
-   function isCenteredKnob(cc)
-     (
-       (cc == VCO2PitchCC || cc == LFODepthCC || cc == EGIntensityCC);
-     ); 
-   
-   function sendPCToDevice()
-   (
+  
+  function sendCC(ch, cc, val)
+  (
+    cc == -1 ? midisend(0, 0xc0 | ch, val) : midisend(0, 0xb0 | ch, cc, val);
+  );
+  
+  function sendUpdatedCC(ch, ccID, val)
+  (
+    getSlider(ccID) != ccSliderOld[ccID] ? sendCC(ch, cc[ccID], val);
+  );
+  
+  function updateCCParam(ccID, val)
+  (        
+    getSlider(ccID) = val;  
+    slider_automate(getSliderAutomate(ccID));        
+  );
+  
+  function isSwitch(cc)
+  (
+    (cc == VCO2OctaveCC || cc == VCO1WaveCC || cc == VCO2WaveCC || cc == VCOModeCC ||cc ==  LFOWaveCC || cc == LFOModeCC || cc == LFOTargetCC || cc == EGTypeCC || cc == EGTargetCC);
+  ); 
+  
+  function isCenteredKnob(cc)
+  (
+    (cc == VCO2PitchCC || cc == LFODepthCC || cc == EGIntensityCC);
+  ); 
+  
+  function sendPCToDevice()
+  (
     sendUpdatedCC(ch, ProgramCC, sProgram - 1); 
-   );
-   
-   function sendCCToDevice()
-     (                    
-         i = 1;
-         loop(CCCount,      
-           isSwitch(i) ? (
-             i == VCO2OctaveCC ? (
-               sendUpdatedCC(ch, i, min((getSlider(i) + 1) * 42, 127));   
-             ) : (
-               sendUpdatedCC(ch, i, min(getSlider(i) * 64, 127));  
-             )
-           ) : (           
-             (isCenteredKnob(i)) ? (   
-               sendUpdatedCC(ch, i, getSlider(i) + 64);                                                          
-             ) : (
-               sendUpdatedCC(ch, i, getSlider(i));                                            
-             )
-           );        
-           i += 1;
-         );
-       );
+  );
+
+  function sendCCToDevice()
+  (                    
+      i = 1;
+      loop(CCCount,      
+        isSwitch(i) ? (
+          i == VCO2OctaveCC ? (
+            sendUpdatedCC(ch, i, min((getSlider(i) + 1) * 42, 127));   
+          ) : (
+            sendUpdatedCC(ch, i, min(getSlider(i) * 64, 127));  
+          )
+        ) : (           
+          (isCenteredKnob(i)) ? (   
+            sendUpdatedCC(ch, i, getSlider(i) + 64);                                                          
+          ) : (
+            sendUpdatedCC(ch, i, getSlider(i));                                            
+          )
+        );        
+        i += 1;
+      );
+    );
   function sendMIDI(ch)
     (           
        buf = 10000;
@@ -216,11 +253,12 @@ gfx_line(0,0,testval,10);
               updateCCParam(DriveCC, value >> 3);
               ///////
               
+              //VCO1 WAVEFORM
               offset = 39;
               value = (buf[offset + 3] & 64) >>  6;
               value = value | ((buf[offset] & 4) >> 1); 
               updateCCParam(VCO1WaveCC, value);
-              
+              ///////
               
               offset = 23;
               value = (buf[offset + 19] & 12) >>  2;
@@ -354,35 +392,29 @@ gfx_line(0,0,testval,10);
           invalidateSliders();
           sendCCToDevice();
       );
+      
       (trigger & 0x02) ? (
         updateCCParam(VCO1WaveCC, randInt(2));
-        updateCCParam(VCO1ShapeCC, randInt(0x7f));
-        
+        updateCCParam(VCO1ShapeCC, randInt(0x7f));        
         updateCCParam(VCO2WaveCC, randInt(2));
         updateCCParam(VCO2ShapeCC, randInt(0x7f));
         updateCCParam(VCO2PitchCC, -64 + randInt(0x7f));
-        updateCCParam(VCO2OctaveCC, -1 + randInt(3));
-        
-        updateCCParam(VCOModeCC, randInt(2));
-        
+        updateCCParam(VCO2OctaveCC, -1 + randInt(3));        
+        updateCCParam(VCOModeCC, randInt(2));        
         updateCCParam(VCO1LevelCC, randInt(0x7f));
-        updateCCParam(VCO2LevelCC, randInt(0x7f));
-        
+        updateCCParam(VCO2LevelCC, randInt(0x7f));        
         updateCCParam(CutoffCC, randInt(0x7f));
-        updateCCParam(ResonanceCC, randInt(0x7f));
-        
+        updateCCParam(ResonanceCC, randInt(0x7f));        
         updateCCParam(LFOWaveCC, randInt(2));
         updateCCParam(LFOModeCC, randInt(2));
         updateCCParam(LFORateCC, randInt(127));
         updateCCParam(LFOIntensityCC, -64 + randInt(0x7f));
-        updateCCParam(LFOTargetCC,  randInt(2));
-        
+        updateCCParam(LFOTargetCC,  randInt(2));        
         updateCCParam(EGTypeCC, randInt(2));
         updateCCParam(EGAttackCC,  floor(min(pow(rand(1), 10) * 0x7f, 0x7f)));
         updateCCParam(EGDecayCC, floor(min(0x7f - pow(rand(1), 10) * 0x7f, 0x7f)));
         updateCCParam(EGIntensityCC, -64 + randInt(0x7f));
         updateCCParam(EGTargetCC, randInt(2));
-        
         updateCCParam(DriveCC, randInt(0x7f));
         
         invalidateCCSliders();       
@@ -464,27 +496,17 @@ gfx_line(0,0,testval,10);
   invalidateCCSliders();
   sendCCToDevice();
   
+  backW = 0;
+  backH = 0;
+  gfx_getimgdim(1, backW, backH); 
  
   
-  
-  
-
 @block
-
-  update();    
-  //sVCO1Wave = 10;
-  //slider_automate(sVCO1Wave);        
+  update();      
   i = 0;
   loop(CCCount, 
     ccSliderOld[i] = getSlider(i);
     i += 1;
   ); 
   trigger = trigger;
-  
-  //slider_automate(sVCO1Shape);  
-  
- // slider32 = 10;
- // slider_automate(slider32);
-
-
   
