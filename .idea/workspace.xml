@@ -2,8 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="82abb238-e433-4225-a400-4ad411e905ab" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/monologue/monologue" beforeDir="false" afterPath="$PROJECT_DIR$/monologue/monologue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/monologue/install.ps1" beforeDir="false" afterPath="$PROJECT_DIR$/monologue/install.ps1" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/monologue/monoctrl/background.png" beforeDir="false" afterPath="$PROJECT_DIR$/monologue/monoctrl/background.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/monologue/monoctrl/monologue" beforeDir="false" afterPath="$PROJECT_DIR$/monologue/monoctrl/monologue" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -22,7 +23,7 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/monologue/utils/sysex.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="392">
@@ -30,15 +31,6 @@
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/monologue/monologue">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="901">
-              <caret line="62" column="21" lean-forward="true" selection-start-line="62" selection-start-column="21" selection-end-line="62" selection-end-column="21" />
             </state>
           </provider>
         </entry>
@@ -83,9 +75,9 @@
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="-1529" />
-    <option name="y" value="31" />
+  <component name="ProjectFrameBounds">
+    <option name="x" value="-1056" />
+    <option name="y" value="345" />
     <option name="width" value="916" />
     <option name="height" value="971" />
   </component>
@@ -259,6 +251,7 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-1223" y="43" width="1231" height="1040" extended-state="6" />
+    <editor active="true" />
     <layout>
       <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.2849958" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
@@ -299,6 +292,13 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/monologue/monologue">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="901">
+          <caret line="62" column="21" lean-forward="true" selection-start-line="62" selection-start-column="21" selection-end-line="62" selection-end-column="21" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/monologue/utils/sysex.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="392">
@@ -306,13 +306,6 @@
           <folding>
             <element signature="e#0#21#0" expanded="true" />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/monologue/monologue">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="901">
-          <caret line="62" column="21" lean-forward="true" selection-start-line="62" selection-start-column="21" selection-end-line="62" selection-end-column="21" />
         </state>
       </provider>
     </entry>

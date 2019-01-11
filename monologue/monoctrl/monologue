@@ -3,10 +3,10 @@ desc: MonoCtrl (Blokatt)
 //author: Jan Vorisek
 
 
-slider1:sChannel=0<0,1,17{All,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16}>MIDI Channel
+slider1:sChannel=1<0,1,17{All,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16}>MIDI Channel
 slider2:sListen=1<1,1,0{No,Yes}>Listen to MIDI
 slider3:sEventFilter=0<0,1,0{All events,CC and PC only}>MIDI Passthrough
-slider4:sInitPlayback=0<0,1.0,0.0{No,Yes}>Send all CC to device on playback start
+//slider4:sInitPlayback=0<0,1.0,0.0{No,Yes}>Send all CC to device on playback start
 
 slider5:sProgram=1<1,100,1>Program
 //================================//
@@ -39,17 +39,17 @@ slider32:sEGIntensity=0<-64,63,1>EG Intensity
 slider33:sEGTarget=0<0,1,3{Cutoff,Pitch 2,Pitch}>EG Target
 //================================//
 slider35:sDrive=0<0,127,1>Drive
-slider64:sSysex=0<0,1024,1>GotSysex
 
 filename:0,logo.png
 filename:1,background.png
 
 @gfx gfx_w, 100
-  repeats = ceil(gfx_h / backH);
+  repeats = ceil((gfx_h + 20) / backH);
   i = 0;
   gfx_x = 0;
+  off = (time_precise() * 20) % 20;
   loop(repeats,   
-    gfx_y = backH * i;
+    gfx_y = floor(backH * i - off);
     gfx_blit(1, 1, 0);
     i += 1;
   );
@@ -83,13 +83,10 @@ filename:1,background.png
   gfx_blit(0, scale + 0.1, (rand(1) - .5) * .075);
   gfx_a = 1;
   gfx_mode = 0;
-  
-  //gfx_line(165 * scale, 0, 165 * scale, gfx_h);
-  
-  
+
   
 @init
-  ext_noinit = 1.0;   
+  //ext_noinit = 1.0;   
   CCCount = 23;
   cc = 0;
   ccSlider = 100;
