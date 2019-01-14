@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="82abb238-e433-4225-a400-4ad411e905ab" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/monologue/utils/patch_req.txt" beforeDir="false" afterPath="$PROJECT_DIR$/monologue/utils/patch_req.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/monologue/utils/sysex.py" beforeDir="false" afterPath="$PROJECT_DIR$/monologue/utils/sysex.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -25,8 +25,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/monologue/utils/sysex.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="194">
-              <caret line="441" column="106" lean-forward="true" selection-start-line="441" selection-start-column="95" selection-end-line="441" selection-end-column="106" />
+            <state relative-caret-position="234">
+              <caret line="98" column="46" lean-forward="true" selection-start-line="98" selection-start-column="46" selection-end-line="98" selection-end-column="46" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -75,8 +75,8 @@
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="901" />
-    <option name="y" value="234" />
+    <option name="x" value="-1022" />
+    <option name="y" value="43" />
     <option name="width" value="916" />
     <option name="height" value="971" />
   </component>
@@ -249,15 +249,15 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1874" height="1096" extended-state="7" />
+    <frame x="-1223" y="43" width="1231" height="1040" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.13616557" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.20955575" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.33437175" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.35501653" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -294,8 +294,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/monologue/utils/sysex.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="194">
-          <caret line="441" column="106" lean-forward="true" selection-start-line="441" selection-start-column="95" selection-end-line="441" selection-end-column="106" />
+        <state relative-caret-position="234">
+          <caret line="98" column="46" lean-forward="true" selection-start-line="98" selection-start-column="46" selection-end-line="98" selection-end-column="46" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
           </folding>

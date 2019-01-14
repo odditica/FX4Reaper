@@ -79,7 +79,7 @@ class MonoPatch:
         self.seq_bpm = 120
 
     def decode_sysex(self, buf):
-        #print(buf)
+        print(buf)
 
         buf = [int(x, 16) for x in buf.split() if can_parse_from_hex(x)]
         offset = 0
@@ -94,20 +94,18 @@ class MonoPatch:
 
         #offset = 12
         self.name = ""
-        for i in range(0, 11):
-            self.name += chr(buf[offset + i])
+        for i in range(0, 14):
+            if (buf[offset + i] != 0 and i != 11):
+                self.name += chr(buf[offset + i])
 
-        offset += 2
-        #offset = 24
-        for i in range(0, 2):
-            self.name += chr(buf[offset + i])
+
 
         # VCO1 Level (10 bits)
         # Byte 23      - bit 7
         # Byte 23 + 7  - bit 1-7
         # Byte 23 + 22 - bit 1-2
 
-        offset += 9
+        offset += 11
         #offset = 23
         value = ((buf[offset] & 64) << 3)
         value = value | ((buf[offset + 7] & 127) << 2)
@@ -439,7 +437,9 @@ while True:
                                 print_full("Waiting for message... ")
                             else:
                                 if msg.hex() == 'F0 7E 00 06 02 42 44 01 00 00 01 00 0E 00 F7':
-                                    outport.send(mido.Message('sysex', data=bytearray.fromhex('42 30 00 01 44 1C 00 00')))
+                                    temp = bytearray.fromhex('42 30 00 01 44 1C 00 00');
+                                    temp[6] = 83;
+                                    outport.send(mido.Message('sysex', data=temp))
                         if msg.type == 'note_on' and msg.note == 60:
 
                             print_full("Sending program dump request..\n")
