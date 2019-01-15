@@ -4,7 +4,7 @@ desc: MonoCtrl (Blokatt)
 
 
 slider1:sChannel=1<0,1,17{All,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16}>MIDI Channel
-slider2:sEventFilter=0<0,1,0{All events,CC and PC only}>MIDI Passthrough
+slider2:sBlockMIDIPassthrough=1<0,1,1{All events,CC and PC only}>MIDI Passthrough
 slider3:sSendPCOnInit=0:0<0,2,1{On program change and playback start,On program change only,Never (local preset)}>Auto-request program from synth
 //slider4:sInitPlayback=0<0,1.0,0.0{No,Yes}>Send all CC to device on playback start
 
@@ -398,15 +398,10 @@ filename:1,background.png
                 sendCCToDevice();
                 
                 //sSysex = value;
-                );
-              
+                );            
               ) : (
-             // sSysex =  buf[0];
-               a=0;
-              //sSysex = buf[0];
-               //midisend_buf(offset,buf,recvlen); 
-              //midisend(offset,msg1,msg2,msg3);
-             );
+                (!sBlockMIDIPassthrough) ? midisend_buf(offset,buf,recvlen); 
+              );
             );            
           ); 
        );          
@@ -444,7 +439,7 @@ filename:1,background.png
         invalidateCCSliders();       
         sendCCToDevice();
       );
-      (sProgram != sProgramOld && sendPC) ? (
+      (sProgram != sProgramOld && sendPC && sSendPCOnInit != 2) ? (
         sprintf(#pc, "different %d %d", sProgramOld, sProgram);     
         midisend_str(0,"\xF0\xFE\x7F\x06\x01\xF7");
         #send = "\xF0\x42\x30\x00\x01\x44\x1C";
@@ -544,6 +539,7 @@ filename:1,background.png
   sliderSpacing();
   DriveCC = initCC(28);  
   invalidateCCSliders();   
+  sendPCToDevice();
   sendCCToDevice();
 
 @slider
