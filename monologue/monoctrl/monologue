@@ -6,7 +6,6 @@ desc: MonoCtrl (Blokatt)
 slider1:sChannel=1<0,1,17{All,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16}>MIDI Channel
 slider2:sBlockMIDIPassthrough=1<0,1,1{All events,CC and PC only}>MIDI Passthrough
 slider3:sSendPCOnInit=0:0<0,2,1{On program change and playback start,On program change only,Never (local preset)}>Auto-request program from synth
-//slider4:sInitPlayback=0<0,1.0,0.0{No,Yes}>Send all CC to device on playback start
 
 slider5:sProgram=1<1,100,1>Program
 //================================//
@@ -55,7 +54,8 @@ filename:1,background.png
   ccSlider = 100;
   ccSliderOld = 200;
   ccSliderAutomateID = 300; 
-  consoleLine = 400;
+  logLine = 400;
+  logLineCounts = 500;
   //
   
   //Testing for successful program request
@@ -65,37 +65,37 @@ filename:1,background.png
   //50 messages
   i = 0; 
   loop(50,
-    consoleLine[i] = 200 + i;
+    logLine[i] = 200 + i;
     i += 1;
   );
   //
-  consoleRedraw = 1;
-  consoleMaxMessageCount = 6;
-  consoleHorizontalOffset = 200;
+  logRedraw = 1;
+  logMaxMessageCount = 6;
+  logHorizontalOffset = 200;
   
   ccid = 0;
   sliderCounter = 0;
   sendPC = !sSendPCOnInit;  
   
-  function consolePrint(str)
+  function logPrint(str)
   (
     //check overflow & shift
     #str = sprintf(#str, "> %s", str);
-    (strcmp(consoleLine[0], #str) != 0) ? (
-      consoleCurrentMessageCount = min(consoleCurrentMessageCount + 1, consoleMaxMessageCount);    
-      j = consoleMaxMessageCount - 1;
-      loop(consoleMaxMessageCount - 1,
-        //consoleLine[j] = consoleLine[j - 1];
-        strcpy(consoleLine[j], consoleLine[j - 1]);
-        //printf(consoleLine[j],"%s",consoleLine[j - 1]);
+    (strcmp(logLine[0], #str) != 0) ? (
+      logCurrentMessageCount = min(logCurrentMessageCount + 1, logMaxMessageCount);    
+      j = logMaxMessageCount - 1;
+      loop(logMaxMessageCount - 1,
+        strcpy(logLine[j], logLine[j - 1]);
+        logLineCounts[j] = logLineCounts[j - 1];
         j -= 1;
       );   
-      //consoleLine[1] = "As";
-      strcpy(consoleLine[0], #str);
-      //sprintf(consoleLine[0], "wwWWasdwjk%s", str);
-      //consoleLine[0] = str;
-      consoleRedraw = 1;
+      strcpy(logLine[0], #str);
+      logLineCounts[0] = 0;            
+    ) : (      
+      logLineCounts[0] += 1;
     );     
+    
+    logRedraw = 1;
   );
   
   function assignCC()
@@ -296,7 +296,7 @@ filename:1,background.png
                     ); 
                     i +=1;
                 );
-                consolePrint(sprintf(#, "RECV: Program '%s'", #temp)); 
+                logPrint(sprintf(#, "RECV: Program '%s'", #temp)); 
            
                 ///// VCO1 LEVEL
                 offset += 11;        
@@ -519,7 +519,7 @@ filename:1,background.png
       (programRequest) ? (
         programRequestTimer += 1;
         (programRequestTimer > 5) ? (
-          consolePrint("ERROR: Program request failed! Check your synth settings and make sure MIDI input is enabled on all channels in order to receive SySex messages.");
+          logPrint("ERROR: Program request failed! Check your synth settings and make sure MIDI input is enabled on all channels in order to receive SySex messages.");
           programRequestTimer = 0;
           programRequest = 0;
         );
@@ -527,6 +527,7 @@ filename:1,background.png
     ); 
     update();
     (sSendPCOnInit != 2) ? sendPC = 1;
+    
   /*
   Init order must be same as slider order!
   */     
@@ -578,7 +579,7 @@ filename:1,background.png
   invalidateCCSliders();   
   sendPCToDevice();
   sendCCToDevice();
-  consolePrint("Init.");   
+  logPrint("Init.");   
 
 @slider
 (sSendPCOnInit != 2) ? sendPC = 1;
@@ -621,8 +622,8 @@ filename:1,background.png
   gfx_setfont(1, "Courier New", 13);
   //gfx_y = gfx_h - 2;
   
-  consoleMaxMessageCount = floor(gfx_h / 10) - 3;  
-  (consoleRedraw) ? (
+  logMaxMessageCount = floor(gfx_h / 10) - 3;  
+  (logRedraw) ? (
     gfx_x = 0;
     gfx_y = 0;
     gfx_texth = 10;
@@ -631,19 +632,20 @@ filename:1,background.png
     gfx_clear = 10;
     i = 0;
     gfx_y = gfx_h - 20;    
-    maxLen =  (gfx_w - consoleHorizontalOffset - 20) / 6;
+    maxLen =  (gfx_w - logHorizontalOffset - 20) / 6;
     lineBreaks = 0;
     
     readWord = 0;
     prematureBreak = 0;
-    loop(consoleMaxMessageCount,
-      (lineBreaks < consoleMaxMessageCount) ? ( 
-        #line = consoleLine[i];
+    loop(logMaxMessageCount,
+      (lineBreaks < logMaxMessageCount) ? ( 
+        #line = "";
+        strcpy(#line, logLine[i]);
         len = strlen(#line);
         off = 0;
         lineOff = 0;
         messageVerticalOffset = floor(strlen(#line) / maxLen) * 10;
-        gfx_x = consoleHorizontalOffset;        
+        gfx_x = logHorizontalOffset;        
         gfx_y -= messageVerticalOffset;
                           
         loop(len,
@@ -667,26 +669,17 @@ filename:1,background.png
           );
         
           (lineOff > maxLen || prematureBreak) ? (
-            /*
-            while (str_getchar(#line, off) != ' ' && off > 0)(
-              off -= 1;
-            );
-            */
-            gfx_x = consoleHorizontalOffset;
-            //gfx_drawstr(#line, 8|256, gfx_x, gfx_y);
-            //#line = strcpy_substr(#line, #line, 0, 10);
+            gfx_x = logHorizontalOffset;
             gfx_y += 10;
             lineOff = 0;
             lineBreaks += 1;
             prematureBreak = 0;
           ); 
           gfx_drawchar(str_getchar(#line, off));
-          //char = str_getchar(#line, off); 
           off += 1;
           lineOff += 1;
         );
-        
-        //gfx_drawstr(#line, 8|256, gfx_x, gfx_y);
+        (logLineCounts[i] > 0) ? gfx_drawstr(sprintf(#, " (%d)", logLineCounts[i])); 
         gfx_y -= 10;
         gfx_y -= messageVerticalOffset;
         i += 1;
@@ -694,7 +687,7 @@ filename:1,background.png
       );
     );
     gfx_dest = -1;
-    consoleRedraw = 0;
+    logRedraw = 0;
   );
   
   
