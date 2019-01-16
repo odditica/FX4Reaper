@@ -50,12 +50,54 @@ filename:1,background.png
   //ext_noinit = 1.0;   
   CCCount = 23;
   cc = 0;
+  
+  // MEMORY OFFSETS
   ccSlider = 100;
   ccSliderOld = 200;
-  ccSliderAutomateID = 300;
+  ccSliderAutomateID = 300; 
+  consoleLine = 400;
+  //
+  
+  //Testing for successful program request
+  programRequest = 0; 
+  programRequestTimer = 0;
+  
+  //50 messages
+  i = 0; 
+  loop(50,
+    consoleLine[i] = 200 + i;
+    i += 1;
+  );
+  //
+  consoleRedraw = 1;
+  consoleMaxMessageCount = 6;
+  consoleHorizontalOffset = 200;
+  
   ccid = 0;
   sliderCounter = 0;
   sendPC = !sSendPCOnInit;  
+  
+  function consolePrint(str)
+  (
+    //check overflow & shift
+    #str = sprintf(#str, "> %s", str);
+    (strcmp(consoleLine[0], #str) != 0) ? (
+      consoleCurrentMessageCount = min(consoleCurrentMessageCount + 1, consoleMaxMessageCount);    
+      j = consoleMaxMessageCount - 1;
+      loop(consoleMaxMessageCount - 1,
+        //consoleLine[j] = consoleLine[j - 1];
+        strcpy(consoleLine[j], consoleLine[j - 1]);
+        //printf(consoleLine[j],"%s",consoleLine[j - 1]);
+        j -= 1;
+      );   
+      //consoleLine[1] = "As";
+      strcpy(consoleLine[0], #str);
+      //sprintf(consoleLine[0], "wwWWasdwjk%s", str);
+      //consoleLine[0] = str;
+      consoleRedraw = 1;
+    );     
+  );
+  
   function assignCC()
   (
         ccid += 1;
@@ -183,7 +225,6 @@ filename:1,background.png
           recvlen <= 3 && buf[0] == 0xb0 ? (
             _id =  buf[1];
             _val =  buf[2];
-            
             i = 1;
             loop(CCCount, 
               _id == cc[i] ? (
@@ -206,9 +247,9 @@ filename:1,background.png
             );  
             
           ) : ( //Program change
-          
+            
             //msg1 == 0xc0 | ch ? (    
-            recvlen <= 3 && buf[0] == 0xc0 ? (     
+            recvlen <= 3 && buf[0] == 0xc0 ? (            
              getSlider(ProgramCC) = buf[1] + 1;  
              slider_automate(getSlider(ProgramCC));                   
             ) : (
@@ -238,7 +279,9 @@ filename:1,background.png
               i = 0;
 
               #temp = bufSubStr(buf, offset, 4);
-              (strcmp(#temp,  "PROG") == 0) ? ( 
+              (strcmp(#temp,  "PROG") == 0) ? (      
+                programRequest = 0;
+                programRequestTimer = 0;
                 //sprintf(#temp,"%f",rand(5));
                 offset += 4;
                 
@@ -253,14 +296,8 @@ filename:1,background.png
                     ); 
                     i +=1;
                 );
-                
+                consolePrint(sprintf(#, "RECV: Program '%s'", #temp)); 
            
-                
-                /*
-                for i in range(0, 2):
-                    self.name += chr(buf[offset + i])
-                */
-                
                 ///// VCO1 LEVEL
                 offset += 11;        
                 value = ((buf[offset] & 64) << 3);
@@ -439,10 +476,9 @@ filename:1,background.png
         invalidateCCSliders();       
         sendCCToDevice();
       );
-      (sProgram != sProgramOld && sendPC && sSendPCOnInit != 2) ? (
-        sprintf(#pc, "different %d %d", sProgramOld, sProgram);     
+      (sProgram != sProgramOld && sendPC && sSendPCOnInit != 2) ? ( 
         midisend_str(0,"\xF0\xFE\x7F\x06\x01\xF7");
-        #send = "\xF0\x42\x30\x00\x01\x44\x1C";
+        #send = "\xF0\x42\x30\x00\x01\x44\x1C";        
        // #temp += 10;
         send = 1000;
         send[0] = 0xF0;
@@ -457,23 +493,17 @@ filename:1,background.png
         send[9] = 0xf7;     
         midisend_buf(0,send,10); 
         sendPCToDevice();
-       // #send = strcat(#send, "asd"); 
-        //#send += "\x00\xF7";
-//        sprintf(#temp,"%c", 10);
-      //  midisend_str(10,#send);        
-//        42 30 00 01 44 1C 00 00
-
-      ); 
-      
+        programRequest = 1;
+      );       
       /*
       buf = 3;
       buf[0] = outCh;
       buf[1] = 50; 
       buf[2] = sVCO1Wave;
       midisend_buf(0, buf, 3);
-      */    
-          
+      */              
     );
+    
     function update()
     (      
       sChannel ? (
@@ -485,14 +515,21 @@ filename:1,background.png
             i += 1;
           );    
         );
-      sProgramOld = sProgram;;
+      sProgramOld = sProgram;
+      (programRequest) ? (
+        programRequestTimer += 1;
+        (programRequestTimer > 5) ? (
+          consolePrint("ERROR: Program request failed! Check your synth settings and make sure MIDI input is enabled on all channels in order to receive SySex messages.");
+          programRequestTimer = 0;
+          programRequest = 0;
+        );
+      );    
     ); 
     update();
     (sSendPCOnInit != 2) ? sendPC = 1;
   /*
   Init order must be same as slider order!
-  */   
-  
+  */     
   ProgramCC = initCC(-1);
   sliderSpacing();
  
@@ -541,6 +578,7 @@ filename:1,background.png
   invalidateCCSliders();   
   sendPCToDevice();
   sendCCToDevice();
+  consolePrint("Init.");   
 
 @slider
 (sSendPCOnInit != 2) ? sendPC = 1;
@@ -554,7 +592,9 @@ filename:1,background.png
   ); 
   trigger = trigger;
 
-@gfx gfx_w, 100
+@gfx 560, 100
+  gfx_clear = 0;
+  gfx_setimgdim(2, gfx_w, gfx_h);
   gfx_getimgdim(1, backW, backH); 
   repeats = ceil((gfx_h + 20) / backH);
   i = 0;
@@ -571,29 +611,108 @@ filename:1,background.png
   gfx_b = 1.0;
   gfx_x = gfx_w - 10;
   gfx_y = 0;
-  gfx_setfont(1, "Courier New", 20);
+  //gfx_setfont(1, "Courier New", 20);
   //gfx_drawnumber(rand(100), 10);
-  gfx_drawstr("Trigger:", 255);
+  //gfx_drawstr("Trigger:", 255);
   //gfx_line(0,0,testval,10); 
   gfx_rect(1, 1, gfx_w - 1, gfx_h - 1,0);
  
   scale = 1;
   gfx_setfont(1, "Courier New", 13);
+  //gfx_y = gfx_h - 2;
+  
+  consoleMaxMessageCount = floor(gfx_h / 10) - 3;  
+  (consoleRedraw) ? (
+    gfx_x = 0;
+    gfx_y = 0;
+    gfx_texth = 10;
+    gfx_dest = 2;
+    gfx_muladdrect(0, 0, gfx_w, gfx_h, 1, 1, 1, 0); 
+    gfx_clear = 10;
+    i = 0;
+    gfx_y = gfx_h - 20;    
+    maxLen =  (gfx_w - consoleHorizontalOffset - 20) / 6;
+    lineBreaks = 0;
+    
+    readWord = 0;
+    prematureBreak = 0;
+    loop(consoleMaxMessageCount,
+      (lineBreaks < consoleMaxMessageCount) ? ( 
+        #line = consoleLine[i];
+        len = strlen(#line);
+        off = 0;
+        lineOff = 0;
+        messageVerticalOffset = floor(strlen(#line) / maxLen) * 10;
+        gfx_x = consoleHorizontalOffset;        
+        gfx_y -= messageVerticalOffset;
+                          
+        loop(len,
+          (str_getchar(#line, off) != ' ') ?
+          (
+            (!readWord) ? (
+              j = 0;
+              break = 0;
+              while (!break)(
+                ((lineOff + j) > maxLen) ? (                  
+                  prematureBreak = 1;                  
+                  break = 1;
+                );
+                (j > 15 || str_getchar(#line, off + j) == ' ') ? break = 1;
+                j += 1;              
+              );
+              readWord = 1;
+            );
+          ) : (
+            readWord = 0;                        
+          );
+        
+          (lineOff > maxLen || prematureBreak) ? (
+            /*
+            while (str_getchar(#line, off) != ' ' && off > 0)(
+              off -= 1;
+            );
+            */
+            gfx_x = consoleHorizontalOffset;
+            //gfx_drawstr(#line, 8|256, gfx_x, gfx_y);
+            //#line = strcpy_substr(#line, #line, 0, 10);
+            gfx_y += 10;
+            lineOff = 0;
+            lineBreaks += 1;
+            prematureBreak = 0;
+          ); 
+          gfx_drawchar(str_getchar(#line, off));
+          //char = str_getchar(#line, off); 
+          off += 1;
+          lineOff += 1;
+        );
+        
+        //gfx_drawstr(#line, 8|256, gfx_x, gfx_y);
+        gfx_y -= 10;
+        gfx_y -= messageVerticalOffset;
+        i += 1;
+        lineBreaks += 1;
+      );
+    );
+    gfx_dest = -1;
+    consoleRedraw = 0;
+  );
+  
+  
   gfx_x = 6;
   gfx_y = gfx_h - 2;
   //gfx_drawnumber(rand(100), 10);
   
   gfx_drawstr("blokatt.net | @blokatt | 2019.", 8|256, gfx_x, gfx_y);
-  
+    
   gfx_x = 30;
   gfx_y = 10;
-  gfx_drawstr(#temp); 
+  //gfx_drawstr(#temp); 
   gfx_x = 30;
   gfx_y = 20;
-  gfx_drawstr(#pc); 
+
   gfx_x = 10 + sin(time_precise() * 5) * 2; 
   gfx_y = gfx_h / 2 - 30;
-   
+    
   gfx_blit(0, scale, (rand(1) - .5) * .05);
   gfx_mode = 1;
   gfx_a = rand(1) * .4;
@@ -602,4 +721,10 @@ filename:1,background.png
   gfx_blit(0, scale + 0.1, (rand(1) - .5) * .075);
   gfx_a = 1;
   gfx_mode = 0;
+  
+  gfx_x = 0;
+  gfx_y = 0;
+  gfx_blit(2, 1, 0);
+
+
     
