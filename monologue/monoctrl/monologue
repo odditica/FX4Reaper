@@ -44,6 +44,7 @@ filename:0,logo.png
 filename:1,background.png
 
 @init  
+  ext_noinit = 1.0;
   backW = 0;
   backH = 0;
   //ext_noinit = 1.0;   
@@ -76,6 +77,12 @@ filename:1,background.png
   ccid = 0;
   sliderCounter = 0;
   sendPC = !sSendPCOnInit;  
+  lastPlayState = 0;
+
+  gfx_w_old = gfx_w;
+  gfx_h_old = gfx_w;
+
+  
   
   function logPrint(str)
   (
@@ -96,7 +103,7 @@ filename:1,background.png
     );     
     
     logRedraw = 1;
-  );
+  );  
   
   function assignCC()
   (
@@ -215,6 +222,28 @@ filename:1,background.png
         i += 1;
       );
     );
+    
+    
+  function requestProgram()(
+      midisend_str(0,"\xF0\xFE\x7F\x06\x01\xF7");
+      #send = "\xF0\x42\x30\x00\x01\x44\x1C";        
+     // #temp += 10;
+      send = 1000;
+      send[0] = 0xF0;
+      send[1] = 0x42;
+      send[2] = 0x30;
+      send[3] = 0x00;
+      send[4] = 0x01;
+      send[5] = 0x44;
+      send[6] = 0x1C;
+      send[7] = sProgram - 1;
+      send[8] = 0x00;
+      send[9] = 0xf7;     
+      midisend_buf(0,send,10); 
+      sendPCToDevice();
+      programRequest = 1;
+    );
+    
   function sendMIDI(ch)
     (           
       buf = 10000;
@@ -476,24 +505,9 @@ filename:1,background.png
         invalidateCCSliders();       
         sendCCToDevice();
       );
-      (sProgram != sProgramOld && sendPC && sSendPCOnInit != 2) ? ( 
-        midisend_str(0,"\xF0\xFE\x7F\x06\x01\xF7");
-        #send = "\xF0\x42\x30\x00\x01\x44\x1C";        
-       // #temp += 10;
-        send = 1000;
-        send[0] = 0xF0;
-        send[1] = 0x42;
-        send[2] = 0x30;
-        send[3] = 0x00;
-        send[4] = 0x01;
-        send[5] = 0x44;
-        send[6] = 0x1C;
-        send[7] = sProgram - 1;
-        send[8] = 0x00;
-        send[9] = 0xf7;     
-        midisend_buf(0,send,10); 
-        sendPCToDevice();
-        programRequest = 1;
+      (sProgram != sProgramOld && sSendPCOnInit != 2) ? (         
+        requestProgram();
+        
       );       
       /*
       buf = 3;
@@ -502,6 +516,12 @@ filename:1,background.png
       buf[2] = sVCO1Wave;
       midisend_buf(0, buf, 3);
       */              
+    );
+            
+    function onPlaybackStart()(
+      sendPCToDevice();
+      sendCCToDevice();
+      (sSendPCOnInit == 0) ? requestProgram();
     );
     
     function update()
@@ -524,6 +544,13 @@ filename:1,background.png
           programRequest = 0;
         );
       );    
+ 
+      (play_state && !lastPlayState) ? (
+        //started playback
+        onPlaybackStart();
+      );
+      
+      lastPlayState = play_state;
     ); 
     update();
     (sSendPCOnInit != 2) ? sendPC = 1;
@@ -577,9 +604,14 @@ filename:1,background.png
   sliderSpacing();
   DriveCC = initCC(28);  
   invalidateCCSliders();   
-  sendPCToDevice();
-  sendCCToDevice();
-  logPrint("Init.");   
+
+  logPrint("====================================================");   
+  logPrint("monoctrl loaded.");   
+  //logPrint("Set input to - MIDI, monologue KBD/KNOB, All channels.");
+  //logPrint("Set hardware MIDI output to - monologue SOUND.");
+  //logPrint("Enable input monitoring and arm this track.");   
+  //logPrint("====================================================");     
+
 
 @slider
 (sSendPCOnInit != 2) ? sendPC = 1;
@@ -595,6 +627,9 @@ filename:1,background.png
 
 @gfx 560, 100
   gfx_clear = 0;
+  
+  (gfx_w_old != gfx_w || gfx_h_old != gfx_h) ? logRedraw = 1;
+  
   gfx_setimgdim(2, gfx_w, gfx_h);
   gfx_getimgdim(1, backW, backH); 
   repeats = ceil((gfx_h + 20) / backH);
@@ -629,7 +664,7 @@ filename:1,background.png
     gfx_texth = 10;
     gfx_dest = 2;
     gfx_muladdrect(0, 0, gfx_w, gfx_h, 1, 1, 1, 0); 
-    gfx_clear = 10;
+    gfx_clear = 0;
     i = 0;
     gfx_y = gfx_h - 20;    
     maxLen =  (gfx_w - logHorizontalOffset - 20) / 6;
@@ -718,6 +753,8 @@ filename:1,background.png
   gfx_x = 0;
   gfx_y = 0;
   gfx_blit(2, 1, 0);
+  gfx_w_old = gfx_w;
+  gfx_h_old = gfx_h;
 
 
     
