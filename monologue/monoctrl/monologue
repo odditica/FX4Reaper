@@ -9,7 +9,7 @@ slider3:sSendPCOnInit=1:0<0,2,1{On program change and playback start,On program 
 
 slider5:sProgram=1<1,100,1>Program
 //================================//
-slider7:sVCO1Wave=1<0,1,3{Square,Triangle,Sawtooth}>VCO1 Waveform
+slider7:sVCO1Wave=2<0,1,3{Square,Triangle,Sawtooth}>VCO1 Waveform
 slider8:sVCO1Shape=0<0,127,1>VCO1 Shape
 //================================//
 slider10:sVCO2Wave=2<0,1,3{Noise,Triangle,Sawtooth}>VCO2 Waveform
@@ -473,6 +473,9 @@ filename:1,background.png
        );          
        sendCCToDevice();
        
+       (btnRandomClicked) ? (
+        logPrint("asd");
+       );
       (trigger & 0x01) ? (
           invalidateSliders();
           sendCCToDevice();
@@ -552,21 +555,29 @@ filename:1,background.png
       lastPlayState = play_state;
     );
     
-    function drawButton(x, y, str) (
+    function drawButton(x, y, str, clicked) (
       gfx_x = x;
       gfx_y = y;
       gfx_measurestr(str, w, h);
       gfx_set(.25, .25, .25);
       gfx_set(.1, .1, .1);
-      x0 = gfx_x - w / 2 -5;
+      x0 = gfx_x - w - 5;
       y0 = gfx_y - h / 2 - 2;
-      (mouse_x >= x0 && mouse_y >= y0 && mouse_x <= x0 + w + 10 && mouse_y <= y0 + h + 4) ? (
+      w += 10;
+      h += 4;
+      (mouse_x >= x0 && mouse_y >= y0 && mouse_x <= x0 + w && mouse_y <= y0 + h) ? (
         gfx_set(.25, .25, .25);
+        (mouse_cap & 1 && !clicked) ? (
+          clicked = 1;          
+        );        
       );
-      gfx_rect(x0, y0, w + 10, h + 4, 1); 
+      //(!(mouse_cap & 1) && clicked) ? (
+       // clicked = 0;          
+      //); 
+      gfx_rect(x0, y0, w, h, 1); 
       gfx_set(1., 1., 1.);
-      gfx_rect(x0, y0, w + 10, h + 4, 0); 
-      gfx_drawstr(str, 41|256, gfx_x, gfx_y + 5);
+      gfx_rect(x0, y0, w, h, 0); 
+      gfx_drawstr(str, 42|256, gfx_x, gfx_y + 5);
     );
     
     
@@ -775,7 +786,12 @@ filename:1,background.png
   
   gfx_a = 1.0;
 
-  drawButton(120, 20, "AAA");
+  xOffset = gfx_w - 10;
+  drawButton(xOffset, 15, "RANDOMISE", btnRandomClicked);
+  xOffset -= w + 10;
+  drawButton(xOffset, 15, "SEND PROGRAM", btnSendClicked);
+  xOffset -= w + 10;
+  drawButton(xOffset, 15, "GET PROGRAM", btnGetClicked);
   
   gfx_w_old = gfx_w;
   gfx_h_old = gfx_h;
