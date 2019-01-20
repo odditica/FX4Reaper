@@ -38,7 +38,6 @@ slider32:sEGIntensity=0<-64,63,1>EG Intensity
 slider33:sEGTarget=0<0,1,3{Cutoff,Pitch 2,Pitch}>EG Target
 //================================//
 slider35:sDrive=0<0,127,1>Drive
-slider36:sSysex=0<0,1027,1>sysex
 
 filename:0,logo.png
 filename:1,background.png
@@ -57,7 +56,9 @@ filename:1,background.png
   ccSliderAutomateID = 300; 
   logLine = 400;
   logLineCounts = 500;
+  buttonClicked = 600;
   //
+  
   
   //Testing for successful program request
   programRequest = 0; 
@@ -473,15 +474,13 @@ filename:1,background.png
        );          
        sendCCToDevice();
        
-       (btnRandomClicked) ? (
-        logPrint("asd");
-       );
-      (trigger & 0x01) ? (
+      (buttonClicked[2]) ? requestProgram();
+      (buttonClicked[1]) ? (
           invalidateSliders();
           sendCCToDevice();
       );
       
-      (trigger & 0x02) ? (
+      (buttonClicked[0]) ? (
         updateCCParam(VCO1WaveCC, randInt(2));
         updateCCParam(VCO1ShapeCC, randInt(0x7f));        
         updateCCParam(VCO2WaveCC, randInt(2));
@@ -504,21 +503,13 @@ filename:1,background.png
         updateCCParam(EGIntensityCC, -64 + randInt(0x7f));
         updateCCParam(EGTargetCC, randInt(2));
         updateCCParam(DriveCC, randInt(0x7f));
-        
+        logPrint("Sliders randomised.");
         invalidateCCSliders();       
         sendCCToDevice();
       );
       (sProgram != sProgramOld && sSendPCOnInit != 2) ? (         
-        requestProgram();
-        
-      );       
-      /*
-      buf = 3;
-      buf[0] = outCh;
-      buf[1] = 50; 
-      buf[2] = sVCO1Wave;
-      midisend_buf(0, buf, 3);
-      */              
+        requestProgram();        
+      );                
     );
             
     function onPlaybackStart()(
@@ -546,7 +537,13 @@ filename:1,background.png
           programRequest = 0;
         );
       );    
- 
+        
+      i = 0;
+      loop(10,  
+        buttonClicked[i] = 0;
+        i += 1;
+      );
+       
       (play_state && !lastPlayState) ? (
         //started playback
         onPlaybackStart();
@@ -555,7 +552,7 @@ filename:1,background.png
       lastPlayState = play_state;
     );
     
-    function drawButton(x, y, str, clicked) (
+    function drawButton(x, y, str, id) (
       gfx_x = x;
       gfx_y = y;
       gfx_measurestr(str, w, h);
@@ -564,19 +561,47 @@ filename:1,background.png
       x0 = gfx_x - w - 5;
       y0 = gfx_y - h / 2 - 2;
       w += 10;
-      h += 4;
-      (mouse_x >= x0 && mouse_y >= y0 && mouse_x <= x0 + w && mouse_y <= y0 + h) ? (
-        gfx_set(.25, .25, .25);
-        (mouse_cap & 1 && !clicked) ? (
-          clicked = 1;          
-        );        
-      );
+      h += 3;
+      
+      (!(mouse_cap & 1)) ? (
+        released = 1;
+      );       
+      
+      
       //(!(mouse_cap & 1) && clicked) ? (
        // clicked = 0;          
       //); 
       gfx_rect(x0, y0, w, h, 1); 
+      
+      gfx_gradrect(x0, y0, w, h, .5, .2, .7, 1, 0, 0, 0, 0, -.03, -.03, -.03, 0);
+      
+      gfx_mode = 1;
+      gfx_set(1., 0, 0, -1, 1);
+      gfx_rect(x0 + 1, y0 + 1, w  - 2, h - 2, 0); 
+      gfx_mode = 0;
       gfx_set(1., 1., 1.);
       gfx_rect(x0, y0, w, h, 0); 
+      gfx_set(.9, .8, 1);
+      
+      (mouse_x >= x0 && mouse_y >= y0 && mouse_x <= x0 + w && mouse_y <= y0 + h) ? (
+        
+        gfx_mode = 1;
+        gfx_gradrect(x0, y0, w, h, .4, .1, .8, .75, 0, 0, 0, 0, -.03, -.03, -.03, 0);
+        gfx_mode = 0;
+        gfx_setcursor(32649);
+        gfx_set(1, 1, 1);
+        (mouse_cap & 1) ? (
+          gfx_y += 1;
+          gfx_mode = 1;
+          gfx_gradrect(x0, y0, w, h, .6, .1, .2, -.25, 0, 0, 0, 0, -.03, -.03, -.03, 0);
+          gfx_mode = 0;
+          (buttonClicked[id] == 0 && released) ? (
+            buttonClicked[id] = 1;      
+            released = 0;
+          );
+        );        
+      );
+      
       gfx_drawstr(str, 42|256, gfx_x, gfx_y + 5);
     );
     
@@ -653,7 +678,6 @@ filename:1,background.png
     ccSliderOld[i] = getSlider(i);
     i += 1;
   ); 
-  trigger = trigger;
 
 @gfx 560, 100
   gfx_clear = 0;
@@ -681,20 +705,23 @@ filename:1,background.png
   //gfx_drawnumber(rand(100), 10);
   //gfx_drawstr("Trigger:", 255);
   //gfx_line(0,0,testval,10); 
-  gfx_rect(1, 1, gfx_w - 1, gfx_h - 1,0);
- 
+  
   scale = 1;
   gfx_setfont(1, "Courier New", 13);
   //gfx_y = gfx_h - 2;
   
   logMaxMessageCount = floor(gfx_h / 10) - 3;  
+  
   (logRedraw) ? (
     gfx_x = 0;
     gfx_y = 0;
+    
+    
     gfx_texth = 10;
     gfx_dest = 2;
     gfx_muladdrect(0, 0, gfx_w, gfx_h, 1, 1, 1, 0); 
     gfx_clear = 0;
+           
     i = 0;
     gfx_y = gfx_h - 20;    
     maxLen =  (gfx_w - logHorizontalOffset - 20) / 6;
@@ -751,6 +778,10 @@ filename:1,background.png
         lineBreaks += 1;
       );
     );
+    gfx_set(0.0, 0.0, 0.0);                    
+    gfx_rect(logHorizontalOffset, 0, gfx_w - logHorizontalOffset, 25);
+    gfx_gradrect(logHorizontalOffset, 25, gfx_w - logHorizontalOffset, 20, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, -.05);
+    gfx_set(1.0, 1.0, 1.0);      
     gfx_dest = -1;
     logRedraw = 0;
   );
@@ -784,14 +815,16 @@ filename:1,background.png
   gfx_y = 0;
   gfx_blit(2, 1, 0);
   
+  gfx_setcursor(32512);
   gfx_a = 1.0;
-
   xOffset = gfx_w - 10;
-  drawButton(xOffset, 15, "RANDOMISE", btnRandomClicked);
-  xOffset -= w + 10;
-  drawButton(xOffset, 15, "SEND PROGRAM", btnSendClicked);
-  xOffset -= w + 10;
-  drawButton(xOffset, 15, "GET PROGRAM", btnGetClicked);
+  drawButton(xOffset, 13, "RANDOMISE", 0);
+  xOffset -= w + 5;
+  drawButton(xOffset, 13, "SEND", 1);
+  xOffset -= w + 5;
+  drawButton(xOffset, 13, "GET", 2);
+  
+  gfx_rect(1, 1, gfx_w - 1, gfx_h - 1,0);
   
   gfx_w_old = gfx_w;
   gfx_h_old = gfx_h;
