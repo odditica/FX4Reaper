@@ -471,7 +471,11 @@ filename:1,background.png
               );
             );            
           ); 
-       );          
+       );    
+              
+       
+       
+             
        sendCCToDevice();
        
       (buttonClicked[2]) ? requestProgram();
@@ -506,10 +510,7 @@ filename:1,background.png
         logPrint("Sliders randomised.");
         invalidateCCSliders();       
         sendCCToDevice();
-      );
-      (sProgram != sProgramOld && sSendPCOnInit != 2) ? (         
-        requestProgram();        
-      );                
+      );    
     );
             
     function onPlaybackStart()(
@@ -519,15 +520,28 @@ filename:1,background.png
     
     function update()
     (      
+      
       sChannel ? (
           sendMIDI(sChannel - 1);
         ):(
-          i = 0;
+          j = 0;
           loop(16, 
-            sendMIDI(i);
-            i += 1;
+            sendMIDI(j);
+            j += 1;
           );    
         );
+      CCChanged = 0;
+      i = 1;
+      loop(CCCount - 1,
+        (getSlider(i) != ccSliderOld[i]) ? CCChanged = 1;
+        i += 1;
+      );
+      (CCChanged) ? sProgram = sProgramOld;
+                  
+      (sProgram != sProgramOld && sSendPCOnInit != 2) ? (         
+        requestProgram();        
+      );   
+        
       sProgramOld = sProgram;
       (programRequest) ? (
         programRequestTimer += 1;
