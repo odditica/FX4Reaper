@@ -38,7 +38,7 @@ slider32:sEGIntensity=0<-64,63,1>EG Intensity
 slider33:sEGTarget=0<0,1,3{Cutoff,Pitch 2,Pitch}>EG Target
 //================================//
 slider35:sDrive=0<0,127,1>Drive
-
+slider36:sDebug=0<0,1024,1>Debug
 filename:0,logo.png
 filename:1,background.png
 
@@ -57,6 +57,7 @@ filename:1,background.png
   logLine = 400;
   logLineCounts = 500;
   buttonClicked = 600;
+  programRequestParam = 700;
   //
   
   
@@ -64,9 +65,9 @@ filename:1,background.png
   programRequest = 0; 
   programRequestTimer = 0;
   
-  //50 messages
+  //100 messages
   i = 0; 
-  loop(50,
+  loop(99,
     logLine[i] = 200 + i;
     i += 1;
   );
@@ -118,7 +119,7 @@ filename:1,background.png
       cc[i] = id;
       ccSlider[i] = sliderCounter + 5;
       ccSliderOld[i] = sliderCounter + 5;
-      ccSliderAutomateID[i] = i + 5;
+      ccSliderAutomateID[i] = i + 4;
       sliderCounter += 1;
       i;
   );
@@ -206,7 +207,7 @@ filename:1,background.png
   function sendCCToDevice()
   (                    
       i = 1;
-      loop(CCCount,      
+      loop(CCCount - 2,      
         isSwitch(i) ? (
           i == VCO2OctaveCC ? (
             sendUpdatedCC(ch, i, min((getSlider(i) + 1) * 42, 127));   
@@ -225,10 +226,32 @@ filename:1,background.png
     );
     
     
-  function requestProgram()(
-      midisend_str(0,"\xF0\xFE\x7F\x06\x01\xF7");
+  function requestProgram(id, updateSliders, sendTwice)(
+      //midisend_str(0,"\xF0\xFE\x7F\x06\x01\xF7");
+       #send = "\xF0\x42\x30\x00\x01\x44\x1C";        
+      // #temp += 10;
+       send = 1000;
+       send[0] = 0xF0;
+       send[1] = 0x42;
+       send[2] = 0x30;
+       send[3] = 0x00;
+       send[4] = 0x01;
+       send[5] = 0x44;
+       send[6] = 0x1C;
+       send[7] = sProgram - 1;
+       send[8] = 0x00;
+       send[9] = 0xf7;     
+       midisend_buf(0,send,10); 
+       sendPCToDevice();
+       programRequestParam[id] = (!updateSliders << 1) | sendTwice;
+       blockSliderUpdate = !updateSliders;
+       programRequest = updateSliders;
+      //err = midisend_str(0, "\xf0\x7E\x7F\x06\x01\xf7");
+ 
+      /*
       #send = "\xF0\x42\x30\x00\x01\x44\x1C";        
-     // #temp += 10;
+       // #temp += 10;
+      programRequestParam[id] = !updateSliders;
       send = 1000;
       send[0] = 0xF0;
       send[1] = 0x42;
@@ -237,12 +260,14 @@ filename:1,background.png
       send[4] = 0x01;
       send[5] = 0x44;
       send[6] = 0x1C;
-      send[7] = sProgram - 1;
+      send[7] = id;
       send[8] = 0x00;
       send[9] = 0xf7;     
-      midisend_buf(0,send,10); 
+      midisend_buf(1, send, 10); 
       sendPCToDevice();
-      programRequest = 1;
+      blockSliderUpdate = !updateSliders;
+      programRequest = updateSliders;
+      */
     );
     
   function sendMIDI(ch)
@@ -256,7 +281,7 @@ filename:1,background.png
             _id =  buf[1];
             _val =  buf[2];
             i = 1;
-            loop(CCCount, 
+            loop(CCCount - 2, 
               _id == cc[i] ? (
                 isSwitch(i) ? (
                   i == VCO2OctaveCC ? (
@@ -285,189 +310,194 @@ filename:1,background.png
             ) : (
               //F0 7E 00 06 02 42 44 01 00 00 01 00 0E 00 F7
               //temp = "asd";
-              
-              (recvlen >= 10 && buf[0] == 0xF0) ? (
-                #temp = bufSubStr(buf, 0, 15);
-                
-                (!stricmp(#temp, "\xF0\xFE\x00\x06\x02\x42\x44\x01\x00\x00\x01\x00\x0E\x00\xF7")) ? ( 
-                  sSysex = 50;
-                );
-                sSysex = buf[0];
-                sSysex = 10;
-              );
-
+    
               (recvlen >= 518 && buf[0] == 0xF0) ? (     
-              sSysex += 2;          
-              offset = 6;
-              
-              (buf[offset] == 0x4C) ? (
-                  offset += 4;
-              ) : (
-                  offset += 2;
-              );     
-              
-              i = 0;
-
-              #temp = bufSubStr(buf, offset, 4);
-              (strcmp(#temp,  "PROG") == 0) ? (      
-                programRequest = 0;
-                programRequestTimer = 0;
-                //sprintf(#temp,"%f",rand(5));
-                offset += 4;
-                
-                #temp = "";
+                 
+                offset = 6;
+                blockSliderUpdate = 0;        
+                program = -1;      
+                (buf[offset] == 0x4C) ? (
+                    program = buf[offset + 1];
+                    sDebug = program;
+                    sProgram = program + 1;
+                    blockSliderUpdate = programRequestParam[buf[offset + 1]] >> 1;
+                    offset += 4;
+                ) : (
+                    offset += 2;
+                );     
                 
                 i = 0;
-                valid = 0;
-                loop(14,
-                    (buf[offset + i] != 0 && i != 11)? (
-                      sprintf(#temp, "%s%c", #temp, buf[offset + i]);
-                      valid += 1;
-                    ); 
-                    i +=1;
-                );
-                logPrint(sprintf(#, "RECV: Program '%s'", #temp)); 
-           
-                ///// VCO1 LEVEL
-                offset += 11;        
-                value = ((buf[offset] & 64) << 3);
-                value = value | ((buf[offset + 7] & 127) << 2);
-                value = value | (buf[offset + 22] & 3);
-                updateCCParam(VCO1LevelCC, value >> 3);
-                
-                
-                /////VCO2 SHAPE
-                value = ((buf[offset] & 32) << 4);
-                value = value | ((buf[offset + 6] & 127) << 2);
-                value = value | ((buf[offset + 20] & 12) >> 2);
-                updateCCParam(VCO2ShapeCC, value >> 3);  
-                
-                
-                ///// VCO2 PITCH
-                value = ((buf[offset] & 16) << 5);
-                value = value | ((buf[offset + 5] & 127) << 2);
-                value = value | (buf[offset + 20] & 3);  
-                updateCCParam(VCO2PitchCC, value >> 3 - 64);      
-                
-                ///// VCO1 SHAPE
-                value = ((buf[offset] & 8) << 6);
-                value = value | ((buf[offset + 4] & 127) << 2);
-                value = value | ((buf[offset + 19] & 12) >> 2);        
-                updateCCParam(VCO1ShapeCC, value >> 3);
-                
-                ///// LFO RATE
-                offset += 8;        
-                value = (buf[offset] & 64) << 3;
-                value = value | ((buf[offset + 7] & 127) << 2);
-                value = value | ((buf[offset + 17] & 12) >> 2);    
-                updateCCParam(LFORateCC, value >> 3);    
-                
-                ///// EG INTENSITY
-                value = (buf[offset] & 32) << 4;
-                value = value | ((buf[offset + 6] & 127) << 2);
-                value = value | (buf[offset + 17] & 3);
-                updateCCParam(EGIntensityCC, (value >> 3) - 64);
-                
-                
-                ///// EG DECAY
-                value = (buf[offset] & 16) << 5;
-                value = value | ((buf[offset + 5] & 127) << 2);
-                value = value | ((buf[offset + 15] & 48) >> 4);
-                updateCCParam(EGDecayCC, value >> 3);
-                
-                
-                ///// EG ATTACK
-                value = (buf[offset] & 8) << 6;
-                value = value | ((buf[offset + 4] & 127) << 2);
-                value = value | ((buf[offset + 15] & 12) >> 2);      
-                updateCCParam(EGAttackCC, value >> 3);  
-                
-                ///// FILTER RESONANCE
-                value = (buf[offset] & 4) << 7;
-                value = value | ((buf[offset + 3] & 127) << 2);
-                value = value | ((buf[offset + 8] & 32) >> 4);
-                value = value | ((buf[offset + 14] & 64) >> 6);    
-                updateCCParam(ResonanceCC, value >> 3);   
-                
-                ///// FILTER CUTOFF
-                value = (buf[offset] & 2) << 8;
-                value = value | ((buf[offset + 2] & 127) << 2);
-                value = value | ((buf[offset + 14] & 48) >> 4);
-                updateCCParam(CutoffCC, value >> 3);
-                
-                
-                ///// VCO2 LEVEL
-                value = ((buf[offset] & 1) << 9);
-                value = value | ((buf[offset + 1] & 127) << 2);
-                value = value | (buf[offset + 14] & 12) >> 2;
-                updateCCParam(VCO2LevelCC, value >> 3);
-                
-                
-                ///// EG TARGET
-                offset += 8;        
-                value = (buf[offset] & 64) >> 5;
-                value = value | ((buf[offset + 7] & 64) >> 6);
-                updateCCParam(EGTargetCC, value);
-                
-                ///// VCO2 WAVE
-                value = ((buf[offset] & 8) >> 2);
-                value = value | ((buf[offset + 4] & 64) >> 6);
-                updateCCParam(VCO2WaveCC, value);
-                
-                ///// VCO1 WAVE
-                value = ((buf[offset] & 4) >> 1);
-                value = value | ((buf[offset + 3] & 64) >> 6);
-                updateCCParam(VCO1WaveCC, value);
-                
-                ///// DRIVE
-                value = ((buf[offset] & 2) << 8);
-                value = value | ((buf[offset + 2] & 127) << 2);
-                value = value | ((buf[offset + 8] & 1) << 1);
-                value = value | ((buf[offset + 9] & 64) >> 6);
-                updateCCParam(DriveCC, value >> 3);
-                
-                ///// LFO INTENSITY
-                value = (buf[offset] & 1) << 9;
-                value = value | ((buf[offset + 1] & 127) << 2);
-                value = value | ((buf[offset + 9] & 48) >> 4);
-                updateCCParam(LFOIntensityCC, (value >> 3) - 64);
-                
-                ///// VCO2 OCTAVE
-                offset += 4;
-                value = (buf[offset] & 48) >> 4;
-                updateCCParam(VCO2OctaveCC, value - 1);
-                
-                ///// RING/SYNC
-                offset += 1;
-                value = (buf[offset] & 3);
-                updateCCParam(VCOModeCC, value);
-                
-                ///// EG TYPE
-                offset += 2;        
-                value = (buf[offset] & 3);     
-                updateCCParam(EGTypeCC, value );
-                
-                ///// LFO TARGET    
-                offset += 3;        
-                value = (buf[offset] & 48) >> 4;
-                updateCCParam(LFOTargetCC, value);
-                
-                ///// LFO MODE
-                value = (buf[offset] & 12) >> 2;
-                updateCCParam(LFOModeCC, value);
-                
-                ///// LFO WAVE
-                value = (buf[offset] & 3);
-                updateCCParam(LFOWaveCC, value);
-                
-                invalidateCCSliders();              
-                //ccSliderOld[ProgramCC] = ccSlider[ProgramCC];
-                sendCCToDevice();
-                
-                //sSysex = value;
-                );            
+  
+                #temp = bufSubStr(buf, offset, 4);
+                (strcmp(#temp,  "PROG") == 0 && !blockSliderUpdate) ? (      
+                  programRequest = 0;
+                  programRequestTimer = 0;
+                  //sprintf(#temp,"%f",rand(5));
+                  offset += 4;
+                  
+                  #temp = "";
+                  
+                  i = 0;
+                  valid = 0;
+                  loop(14,
+                      (buf[offset + i] != 0 && i != 11)? (
+                        sprintf(#temp, "%s%c", #temp, buf[offset + i]);
+                        valid += 1;
+                      ); 
+                      i +=1;
+                  );                  
+             
+                  ///// VCO1 LEVEL
+                  offset += 11;        
+                  value = ((buf[offset] & 64) << 3);
+                  value = value | ((buf[offset + 7] & 127) << 2);
+                  value = value | (buf[offset + 22] & 3);
+                  updateCCParam(VCO1LevelCC, value >> 3);
+                  
+                  
+                  /////VCO2 SHAPE
+                  value = ((buf[offset] & 32) << 4);
+                  value = value | ((buf[offset + 6] & 127) << 2);
+                  value = value | ((buf[offset + 20] & 12) >> 2);
+                  updateCCParam(VCO2ShapeCC, value >> 3);  
+                  
+                  
+                  ///// VCO2 PITCH
+                  value = ((buf[offset] & 16) << 5);
+                  value = value | ((buf[offset + 5] & 127) << 2);
+                  value = value | (buf[offset + 20] & 3);  
+                  updateCCParam(VCO2PitchCC, value >> 3 - 64);      
+                  
+                  ///// VCO1 SHAPE
+                  value = ((buf[offset] & 8) << 6);
+                  value = value | ((buf[offset + 4] & 127) << 2);
+                  value = value | ((buf[offset + 19] & 12) >> 2);        
+                  updateCCParam(VCO1ShapeCC, value >> 3);
+                  
+                  ///// LFO RATE
+                  offset += 8;        
+                  value = (buf[offset] & 64) << 3;
+                  value = value | ((buf[offset + 7] & 127) << 2);
+                  value = value | ((buf[offset + 17] & 12) >> 2);    
+                  updateCCParam(LFORateCC, value >> 3);    
+                  
+                  ///// EG INTENSITY
+                  value = (buf[offset] & 32) << 4;
+                  value = value | ((buf[offset + 6] & 127) << 2);
+                  value = value | (buf[offset + 17] & 3);
+                  updateCCParam(EGIntensityCC, (value >> 3) - 64);
+                  
+                  
+                  ///// EG DECAY
+                  value = (buf[offset] & 16) << 5;
+                  value = value | ((buf[offset + 5] & 127) << 2);
+                  value = value | ((buf[offset + 15] & 48) >> 4);
+                  updateCCParam(EGDecayCC, value >> 3);
+                  
+                  
+                  ///// EG ATTACK
+                  value = (buf[offset] & 8) << 6;
+                  value = value | ((buf[offset + 4] & 127) << 2);
+                  value = value | ((buf[offset + 15] & 12) >> 2);      
+                  updateCCParam(EGAttackCC, value >> 3);  
+                  
+                  ///// FILTER RESONANCE
+                  value = (buf[offset] & 4) << 7;
+                  value = value | ((buf[offset + 3] & 127) << 2);
+                  value = value | ((buf[offset + 8] & 32) >> 4);
+                  value = value | ((buf[offset + 14] & 64) >> 6);    
+                  updateCCParam(ResonanceCC, value >> 3);   
+                  
+                  ///// FILTER CUTOFF
+                  value = (buf[offset] & 2) << 8;
+                  value = value | ((buf[offset + 2] & 127) << 2);
+                  value = value | ((buf[offset + 14] & 48) >> 4);
+                  updateCCParam(CutoffCC, value >> 3);
+                  
+                  
+                  ///// VCO2 LEVEL
+                  value = ((buf[offset] & 1) << 9);
+                  value = value | ((buf[offset + 1] & 127) << 2);
+                  value = value | (buf[offset + 14] & 12) >> 2;
+                  updateCCParam(VCO2LevelCC, value >> 3);
+                  
+                  
+                  ///// EG TARGET
+                  offset += 8;        
+                  value = (buf[offset] & 64) >> 5;
+                  value = value | ((buf[offset + 7] & 64) >> 6);
+                  updateCCParam(EGTargetCC, value);
+                  
+                  ///// VCO2 WAVE
+                  value = ((buf[offset] & 8) >> 2);
+                  value = value | ((buf[offset + 4] & 64) >> 6);
+                  updateCCParam(VCO2WaveCC, value);
+                  
+                  ///// VCO1 WAVE
+                  value = ((buf[offset] & 4) >> 1);
+                  value = value | ((buf[offset + 3] & 64) >> 6);
+                  updateCCParam(VCO1WaveCC, value);
+                  
+                  ///// DRIVE
+                  value = ((buf[offset] & 2) << 8);
+                  value = value | ((buf[offset + 2] & 127) << 2);
+                  value = value | ((buf[offset + 8] & 1) << 1);
+                  value = value | ((buf[offset + 9] & 64) >> 6);
+                  updateCCParam(DriveCC, value >> 3);
+                  
+                  ///// LFO INTENSITY
+                  value = (buf[offset] & 1) << 9;
+                  value = value | ((buf[offset + 1] & 127) << 2);
+                  value = value | ((buf[offset + 9] & 48) >> 4);
+                  updateCCParam(LFOIntensityCC, (value >> 3) - 64);
+                  
+                  ///// VCO2 OCTAVE
+                  offset += 4;
+                  value = (buf[offset] & 48) >> 4;
+                  updateCCParam(VCO2OctaveCC, value - 1);
+                  
+                  ///// RING/SYNC
+                  offset += 1;
+                  value = (buf[offset] & 3);
+                  updateCCParam(VCOModeCC, value);
+                  
+                  ///// EG TYPE
+                  offset += 2;        
+                  value = (buf[offset] & 3);     
+                  updateCCParam(EGTypeCC, value );
+                  
+                  ///// LFO TARGET    
+                  offset += 3;        
+                  value = (buf[offset] & 48) >> 4;
+                  updateCCParam(LFOTargetCC, value);
+                  
+                  ///// LFO MODE
+                  value = (buf[offset] & 12) >> 2;
+                  updateCCParam(LFOModeCC, value);
+                  
+                  ///// LFO WAVE
+                  value = (buf[offset] & 3);
+                  updateCCParam(LFOWaveCC, value);
+                  (program != -1) ? (
+                    (programRequestParam[program] & 1) ? echoProgramRequest = 5;
+                    //programRequestParam[program] = 0;
+                  );
+                  (program == -1 || (program >= 0 && !programRequestParam[program] & 1)) ? ( 
+                    logPrint(sprintf(#, "RECV: Program '%s'", #temp)); 
+                  ); 
+                  //ccSliderOld[ProgramCC] = ccSlider[ProgramCC];              
+                  //sSysex = value;
+                );      
+                invalidateCCSliders(); 
+                sendCCToDevice();  
+                blockSliderUpdate = 0;    
+                i = 1;
+                loop(CCCount - 2, 
+                  ccSliderOld[i] = getSlider(i);
+                  i += 1;
+                );                 
               ) : (
-                (!sBlockMIDIPassthrough) ? midisend_buf(offset,buf,recvlen); 
+                (!sBlockMIDIPassthrough) ? midisend_buf(offset,buf,recvlen);                
               );
             );            
           ); 
@@ -478,7 +508,7 @@ filename:1,background.png
              
        sendCCToDevice();
        
-      (buttonClicked[2]) ? requestProgram();
+      (buttonClicked[2]) ? requestProgram(sProgram -  1, 1, 1);
       (buttonClicked[1]) ? (
           invalidateSliders();
           sendCCToDevice();
@@ -515,7 +545,7 @@ filename:1,background.png
             
     function onPlaybackStart()(
       sendCCToDevice();
-      (sSendPCOnInit == 0) ? requestProgram();
+      (sSendPCOnInit == 0) ? requestProgram(sProgram - 1, 1, 1);
     );
     
     function update()
@@ -532,15 +562,25 @@ filename:1,background.png
         );
       CCChanged = 0;
       i = 1;
-      loop(CCCount - 1,
+      loop(CCCount - 2,
         (getSlider(i) != ccSliderOld[i]) ? CCChanged = 1;
         i += 1;
       );
-      (CCChanged) ? sProgram = sProgramOld;
+      //(CCChanged) ? blockSliderUpdate = 1;
                   
-      (sProgram != sProgramOld && sSendPCOnInit != 2) ? (         
-        requestProgram();        
+      (sProgram != sProgramOld) ? (  
+        (CCChanged) ?  logPrint("Slider update block");        
+        requestProgram(sProgram - 1, !CCChanged && (sSendPCOnInit != 2), 1);                      
+        invalidateCCSliders(); 
+        sendCCToDevice();
       );   
+      
+      (echoProgramRequest > 0) ? (
+        (echoProgramRequest == 1) ? (
+          requestProgram(sProgram - 1, 1, 0);      
+        );
+        echoProgramRequest -= 1;
+      );
         
       sProgramOld = sProgram;
       (programRequest) ? (
@@ -673,7 +713,7 @@ filename:1,background.png
   sliderSpacing();
   DriveCC = initCC(28);  
   invalidateCCSliders();   
-  requestProgram();
+  requestProgram(sProgram - 1, 1, 1);
   logPrint("====================================================");   
   logPrint("monoctrl loaded.");   
   //logPrint("Set input to - MIDI, monologue KBD/KNOB, All channels.");
@@ -687,8 +727,8 @@ filename:1,background.png
   
 @block
   update();      
-  i = 0;
-  loop(CCCount, 
+  i = 1;
+  loop(CCCount - 2, 
     ccSliderOld[i] = getSlider(i);
     i += 1;
   ); 
