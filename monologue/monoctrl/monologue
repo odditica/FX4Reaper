@@ -503,18 +503,45 @@ filename:1,background.png
           ); 
        );    
               
-       
-       
-             
+           
        sendCCToDevice();
        
-      (buttonClicked[2]) ? requestProgram(sProgram -  1, 1, 1);
-      (buttonClicked[1]) ? (
+      (buttonClicked[3]) ? requestProgram(sProgram -  1, 1, 1);
+      (buttonClicked[2]) ? (
           invalidateSliders();
           sendCCToDevice();
-      );
+      );  
       
       (buttonClicked[0]) ? (
+          updateCCParam(VCO1WaveCC, min(2, max(0, sVCO1Wave + randInt(2) - 1)));
+          updateCCParam(VCO1ShapeCC, min(127, max(0, sVCO1Shape + randInt(10) - 5)));          
+          updateCCParam(VCO2WaveCC, min(2, max(0, sVCO2Wave + randInt(2) - 1)));
+          updateCCParam(VCO2ShapeCC,  min(127, max(0, sVCO2Shape + randInt(10) - 5)));          
+          updateCCParam(VCO2PitchCC, min(63, max(-64, sVCO2Pitch + randInt(10) - 5)));  
+          updateCCParam(VCO2OctaveCC, min(2, max(-1, sVCO2Octave + randInt(2) - 1)));
+          updateCCParam(VCOModeCC, min(2, max(0, sVCOMode + randInt(2) - 1)));
+          updateCCParam(VCO1LevelCC, min(127, max(0, sVCO1Level + randInt(10) - 5)));          
+          updateCCParam(VCO2LevelCC, min(127, max(0, sVCO2Level + randInt(10) - 5)));          
+          updateCCParam(CutoffCC, min(127, max(0, sFilterCutoff + randInt(10) - 5)));          
+          updateCCParam(ResonanceCC, min(127, max(0, sFilterResonance + randInt(10) - 5)));         
+          updateCCParam(LFOWaveCC, min(2, max(0, sLFOWave + randInt(2) - 1)));
+          updateCCParam(LFOModeCC, min(2, max(0, sLFOMode + randInt(2) - 1)));
+          updateCCParam(LFORateCC, min(127, max(0, sLFORate + randInt(10) - 5)));    
+          updateCCParam(LFOIntensityCC, min(63, max(-64, sLFOIntensity + randInt(10) - 5)));  
+          updateCCParam(LFOTargetCC, min(2, max(0, sLFOTarget + randInt(2) - 1)));
+          updateCCParam(EGTypeCC ,min(2, max(0, sEGType + randInt(2) - 1)));          
+          updateCCParam(EGAttackCC, min(127, max(0, sEGAttack + randInt(6) - 3)));    
+          updateCCParam(EGDecayCC, min(127, max(0, sEGDecay + randInt(10) - 5)));    
+          updateCCParam(EGIntensityCC, min(63, max(-64, sEGIntensity + randInt(10) - 5)));  
+          updateCCParam(EGTargetCC, min(2, max(0, sEGTarget + randInt(2) - 1)));
+          updateCCParam(DriveCC, min(127, max(0, sDrive + randInt(10) - 5)));         
+          logPrint("Sliders mutated.");
+          invalidateCCSliders();       
+          sendCCToDevice();
+      );
+  
+      
+      (buttonClicked[1]) ? (
         updateCCParam(VCO1WaveCC, randInt(2));
         updateCCParam(VCO1ShapeCC, randInt(0x7f));        
         updateCCParam(VCO2WaveCC, randInt(2));
@@ -540,7 +567,7 @@ filename:1,background.png
         logPrint("Sliders randomised.");
         invalidateCCSliders();       
         sendCCToDevice();
-      );    
+    );    
     );
             
     function onPlaybackStart()(
@@ -886,11 +913,13 @@ filename:1,background.png
   gfx_setcursor(32512);
   gfx_a = 1.0;
   xOffset = gfx_w - 10;
-  drawButton(xOffset, 13, "RANDOMISE", 0);
+  drawButton(xOffset, 13, "MUTATE", 0);
   xOffset -= w + 5;
-  drawButton(xOffset, 13, "SEND", 1);
+  drawButton(xOffset, 13, "RANDOMISE", 1);
   xOffset -= w + 5;
-  drawButton(xOffset, 13, "GET", 2);
+  drawButton(xOffset, 13, "SEND", 2);
+  xOffset -= w + 5;
+  drawButton(xOffset, 13, "GET", 3);
   
   gfx_rect(1, 1, gfx_w - 1, gfx_h - 1,0);
   
