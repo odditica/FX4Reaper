@@ -66,10 +66,11 @@ filename:1,background.png
   programRequestTimer = 0;
   
   //100 messages
-  i = 0; 
+  
+  a = 0; 
   loop(99,
-    logLine[i] = 200 + i;
-    i += 1;
+    logLine[a] = 200 + a;
+    a += 1;
   );
   //
   logRedraw = 1;
@@ -84,19 +85,18 @@ filename:1,background.png
   gfx_w_old = gfx_w;
   gfx_h_old = gfx_w;
 
-  
-  
+
   function logPrint(str)
   (
     //check overflow & shift
     #str = sprintf(#str, "> %s", str);
     (strcmp(logLine[0], #str) != 0) ? (
       logCurrentMessageCount = min(logCurrentMessageCount + 1, logMaxMessageCount);    
-      j = logMaxMessageCount - 1;
+      b = logMaxMessageCount - 1;
       loop(logMaxMessageCount - 1,
-        strcpy(logLine[j], logLine[j - 1]);
-        logLineCounts[j] = logLineCounts[j - 1];
-        j -= 1;
+        strcpy(logLine[b], logLine[b - 1]);
+        logLineCounts[b] = logLineCounts[b - 1];
+        b -= 1;
       );   
       strcpy(logLine[0], #str);
       logLineCounts[0] = 0;            
@@ -126,18 +126,18 @@ filename:1,background.png
   
   function invalidateCCSliders()
   (
-      i = 1;
-      loop(CCCount, 
-        ccSliderOld[i] = -1;
-        i += 1;
+      c = 1;
+      loop(CCCount - 1, 
+        ccSliderOld[c] = -1;
+        c += 1;
       ); 
   );
   function invalidateSliders()
   (
-      i = 0;
-      loop(CCCount, 
-        ccSliderOld[i] = -1;
-        i += 1;
+      d = 0;
+      loop(CCCount - 1, 
+        ccSliderOld[d] = -1;
+        d += 1;
       ); 
   );
   
@@ -195,10 +195,10 @@ filename:1,background.png
   function bufSubStr(bfr, a, b)
   (
     #str = "";
-    i = 0;
+    e = 0;
     loop(b, 
-      sprintf(#str, "%s%c", #str,bfr[a + i]);
-      i += 1;
+      sprintf(#str, "%s%c", #str,bfr[a + e]);
+      e += 1;
     );
     
     #str;      
@@ -206,22 +206,22 @@ filename:1,background.png
 
   function sendCCToDevice()
   (                    
-      i = 1;
-      loop(CCCount - 2,      
-        isSwitch(i) ? (
-          i == VCO2OctaveCC ? (
-            sendUpdatedCC(ch, i, min((getSlider(i) + 1) * 42, 127));   
+      f = 1;
+      loop(CCCount - 1,      
+        isSwitch(f) ? (
+          f == VCO2OctaveCC ? (
+            sendUpdatedCC(ch, f, min((getSlider(f) + 1) * 42, 127));   
           ) : (
-            sendUpdatedCC(ch, i, min(getSlider(i) * 64, 127));  
+            sendUpdatedCC(ch, f, min(getSlider(f) * 64, 127));  
           )
         ) : (           
-          (isCenteredKnob(i)) ? (   
-            sendUpdatedCC(ch, i, getSlider(i) + 64);                                                          
+          (isCenteredKnob(f)) ? (   
+            sendUpdatedCC(ch, f, getSlider(f) + 64);                                                          
           ) : (
-            sendUpdatedCC(ch, i, getSlider(i));                                            
+            sendUpdatedCC(ch, f, getSlider(f));                                            
           )
         );        
-        i += 1;
+        f += 1;
       );
     );
     
@@ -280,25 +280,25 @@ filename:1,background.png
           recvlen <= 3 && buf[0] == 0xb0 ? (
             _id =  buf[1];
             _val =  buf[2];
-            i = 1;
-            loop(CCCount - 2, 
-              _id == cc[i] ? (
-                isSwitch(i) ? (
+            g = 1;
+            loop(CCCount - 1, 
+              _id == cc[g] ? (
+                isSwitch(g) ? (
                   i == VCO2OctaveCC ? (
-                    getSlider(i) = floor((_val) / 42) - 1;   
+                    getSlider(g) = floor((_val) / 42) - 1;   
                   ) : (
-                    getSlider(i) = floor((_val + 1) / 64);   
+                    getSlider(g) = floor((_val + 1) / 64);   
                   )
                 ) : (           
-                  (isCenteredKnob(i)) ? (   
-                    getSlider(i) = _val - 64;                                                            
+                  (isCenteredKnob(g)) ? (   
+                    getSlider(g) = _val - 64;                                                            
                   ) : (
-                    getSlider(i) = _val;                                            
+                    getSlider(g) = _val;                                            
                   )
                 );
-                slider_automate(getSliderAutomate(i));          
+                slider_automate(getSliderAutomate(g));          
               );
-              i += 1;
+              g += 1;
             );  
             
           ) : ( //Program change
@@ -337,14 +337,14 @@ filename:1,background.png
                   
                   #temp = "";
                   
-                  i = 0;
+                  h = 0;
                   valid = 0;
                   loop(14,
-                      (buf[offset + i] != 0 && i != 11)? (
-                        sprintf(#temp, "%s%c", #temp, buf[offset + i]);
+                      (buf[offset + h] != 0 && h != 11)? (
+                        sprintf(#temp, "%s%c", #temp, buf[offset + h]);
                         valid += 1;
                       ); 
-                      i +=1;
+                      h += 1;
                   );                  
              
                   ///// VCO1 LEVEL
@@ -492,7 +492,7 @@ filename:1,background.png
                 sendCCToDevice();  
                 blockSliderUpdate = 0;    
                 i = 1;
-                loop(CCCount - 2, 
+                loop(CCCount - 1, 
                   ccSliderOld[i] = getSlider(i);
                   i += 1;
                 );                 
@@ -588,10 +588,10 @@ filename:1,background.png
           );    
         );
       CCChanged = 0;
-      i = 1;
-      loop(CCCount - 2,
-        (getSlider(i) != ccSliderOld[i]) ? CCChanged = 1;
-        i += 1;
+      k = 1;
+      loop(CCCount - 1,
+        (getSlider(k) != ccSliderOld[k]) ? CCChanged = 1;
+        k += 1;
       );
       //(CCChanged) ? blockSliderUpdate = 1;
                   
@@ -619,10 +619,10 @@ filename:1,background.png
         );
       );    
         
-      i = 0;
+      l = 0;
       loop(10,  
-        buttonClicked[i] = 0;
-        i += 1;
+        buttonClicked[l] = 0;
+        l += 1;
       );
        
       (play_state && !lastPlayState) ? (
@@ -754,10 +754,10 @@ filename:1,background.png
   
 @block
   update();      
-  i = 1;
-  loop(CCCount - 2, 
-    ccSliderOld[i] = getSlider(i);
-    i += 1;
+  m = 1;
+  loop(CCCount - 1, 
+    ccSliderOld[m] = getSlider(m);
+    m += 1;
   ); 
 
 @gfx 560, 100
