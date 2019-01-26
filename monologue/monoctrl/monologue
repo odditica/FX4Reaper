@@ -4,7 +4,7 @@ desc: MonoCtrl (Blokatt)
 
 
 slider1:sChannel=1<0,17,1{All,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16}>MIDI Channel
-slider2:sBlockMIDIPassthrough=1<0,1,1{All events,CC and PC only}>MIDI Passthrough
+slider2:sBlockMIDIPassthrough=1<0,1,1{All events,CC/PC (all events during playback),CC and PC only}>MIDI Passthrough
 slider3:sSendPCOnInit=1:0<0,2,1{On program change and playback start,On program change only,Never (local preset)}>Auto-request program from synth
 
 slider5:sProgram=1<1,100,1>Program
@@ -74,17 +74,15 @@ filename:1,background.png
   );
   //
   logRedraw = 1;
-  logMaxMessageCount = 6;
+  logMaxMessageCount = 99;
   logHorizontalOffset = 200;
   
   ccid = 0;
   sliderCounter = 0;
-  sendPC = !sSendPCOnInit;  
   lastPlayState = 0;
 
   gfx_w_old = gfx_w;
   gfx_h_old = gfx_w;
-
 
   function logPrint(str)
   (
@@ -103,7 +101,6 @@ filename:1,background.png
     ) : (      
       logLineCounts[0] += 1;
     );     
-    
     logRedraw = 2;
   );  
   
@@ -497,7 +494,7 @@ filename:1,background.png
                   i += 1;
                 );                 
               ) : (
-                (!sBlockMIDIPassthrough) ? midisend_buf(offset,buf,recvlen);                
+                ((sBlockMIDIPassthrough == 0) || (sBlockMIDIPassthrough == 1 && play_state  == 1)) ? midisend_buf(offset,buf,recvlen);                
               );
             );            
           ); 
@@ -513,31 +510,31 @@ filename:1,background.png
       );  
       
       (buttonClicked[0]) ? (
-          updateCCParam(VCO1WaveCC, min(2, max(0, sVCO1Wave + randInt(2) - 1)));
-          updateCCParam(VCO1ShapeCC, min(127, max(0, sVCO1Shape + randInt(10) - 5)));          
-          updateCCParam(VCO2WaveCC, min(2, max(0, sVCO2Wave + randInt(2) - 1)));
-          updateCCParam(VCO2ShapeCC,  min(127, max(0, sVCO2Shape + randInt(10) - 5)));          
-          updateCCParam(VCO2PitchCC, min(63, max(-64, sVCO2Pitch + randInt(10) - 5)));  
-          updateCCParam(VCO2OctaveCC, min(2, max(-1, sVCO2Octave + randInt(2) - 1)));
-          updateCCParam(VCOModeCC, min(2, max(0, sVCOMode + randInt(2) - 1)));
-          updateCCParam(VCO1LevelCC, min(127, max(0, sVCO1Level + randInt(10) - 5)));          
-          updateCCParam(VCO2LevelCC, min(127, max(0, sVCO2Level + randInt(10) - 5)));          
-          updateCCParam(CutoffCC, min(127, max(0, sFilterCutoff + randInt(10) - 5)));          
-          updateCCParam(ResonanceCC, min(127, max(0, sFilterResonance + randInt(10) - 5)));         
-          updateCCParam(LFOWaveCC, min(2, max(0, sLFOWave + randInt(2) - 1)));
-          updateCCParam(LFOModeCC, min(2, max(0, sLFOMode + randInt(2) - 1)));
-          updateCCParam(LFORateCC, min(127, max(0, sLFORate + randInt(10) - 5)));    
-          updateCCParam(LFOIntensityCC, min(63, max(-64, sLFOIntensity + randInt(10) - 5)));  
-          updateCCParam(LFOTargetCC, min(2, max(0, sLFOTarget + randInt(2) - 1)));
-          updateCCParam(EGTypeCC ,min(2, max(0, sEGType + randInt(2) - 1)));          
-          updateCCParam(EGAttackCC, min(127, max(0, sEGAttack + randInt(6) - 3)));    
-          updateCCParam(EGDecayCC, min(127, max(0, sEGDecay + randInt(10) - 5)));    
-          updateCCParam(EGIntensityCC, min(63, max(-64, sEGIntensity + randInt(10) - 5)));  
-          updateCCParam(EGTargetCC, min(2, max(0, sEGTarget + randInt(2) - 1)));
-          updateCCParam(DriveCC, min(127, max(0, sDrive + randInt(10) - 5)));         
-          logPrint("Sliders mutated.");
-          invalidateCCSliders();       
-          sendCCToDevice();
+        updateCCParam(VCO1WaveCC, min(2, max(0, sVCO1Wave + randInt(2) - 1)));
+        updateCCParam(VCO1ShapeCC, min(127, max(0, sVCO1Shape + randInt(10) - 5)));          
+        updateCCParam(VCO2WaveCC, min(2, max(0, sVCO2Wave + randInt(2) - 1)));
+        updateCCParam(VCO2ShapeCC,  min(127, max(0, sVCO2Shape + randInt(10) - 5)));          
+        updateCCParam(VCO2PitchCC, min(63, max(-64, sVCO2Pitch + randInt(10) - 5)));  
+        updateCCParam(VCO2OctaveCC, min(2, max(-1, sVCO2Octave + randInt(2) - 1)));
+        updateCCParam(VCOModeCC, min(2, max(0, sVCOMode + randInt(2) - 1)));
+        updateCCParam(VCO1LevelCC, min(127, max(0, sVCO1Level + randInt(10) - 5)));          
+        updateCCParam(VCO2LevelCC, min(127, max(0, sVCO2Level + randInt(10) - 5)));          
+        updateCCParam(CutoffCC, min(127, max(0, sFilterCutoff + randInt(10) - 5)));          
+        updateCCParam(ResonanceCC, min(127, max(0, sFilterResonance + randInt(10) - 5)));         
+        updateCCParam(LFOWaveCC, min(2, max(0, sLFOWave + randInt(2) - 1)));
+        updateCCParam(LFOModeCC, min(2, max(0, sLFOMode + randInt(2) - 1)));
+        updateCCParam(LFORateCC, min(127, max(0, sLFORate + randInt(10) - 5)));    
+        updateCCParam(LFOIntensityCC, min(63, max(-64, sLFOIntensity + randInt(10) - 5)));  
+        updateCCParam(LFOTargetCC, min(2, max(0, sLFOTarget + randInt(2) - 1)));
+        updateCCParam(EGTypeCC ,min(2, max(0, sEGType + randInt(2) - 1)));          
+        updateCCParam(EGAttackCC, min(127, max(0, sEGAttack + randInt(6) - 3)));    
+        updateCCParam(EGDecayCC, min(127, max(0, sEGDecay + randInt(10) - 5)));    
+        updateCCParam(EGIntensityCC, min(63, max(-64, sEGIntensity + randInt(10) - 5)));  
+        updateCCParam(EGTargetCC, min(2, max(0, sEGTarget + randInt(2) - 1)));
+        updateCCParam(DriveCC, min(127, max(0, sDrive + randInt(10) - 5)));         
+        logPrint("Sliders mutated.");
+        invalidateCCSliders();       
+        sendCCToDevice();
       );
   
       
@@ -559,8 +556,8 @@ filename:1,background.png
         updateCCParam(LFOIntensityCC, -64 + randInt(0x7f));
         updateCCParam(LFOTargetCC,  randInt(2));        
         updateCCParam(EGTypeCC, randInt(2));
-        updateCCParam(EGAttackCC,  floor(min(pow(rand(1), 10) * 0x7f, 0x7f)));
-        updateCCParam(EGDecayCC, floor(min(0x7f - pow(rand(1), 10) * 0x7f, 0x7f)));
+        updateCCParam(EGAttackCC,  floor(min(pow(rand(1), 8) * 0x7f, 0x7f)));
+        updateCCParam(EGDecayCC, floor(min(0x7f - pow(rand(1), 5) * 0x7f, 0x7f)));
         updateCCParam(EGIntensityCC, -64 + randInt(0x7f));
         updateCCParam(EGTargetCC, randInt(2));
         updateCCParam(DriveCC, randInt(0x7f));
@@ -633,61 +630,6 @@ filename:1,background.png
       lastPlayState = play_state;
     );
     
-    function drawButton(x, y, str, id) (
-      gfx_x = x;
-      gfx_y = y;
-      gfx_measurestr(str, w, h);
-      gfx_set(.25, .25, .25);
-      gfx_set(.1, .1, .1);
-      x0 = gfx_x - w - 5;
-      y0 = gfx_y - h / 2 - 2;
-      w += 10;
-      h += 3;
-      
-      (!(mouse_cap & 1)) ? (
-        released = 1;
-      );       
-      
-      
-      //(!(mouse_cap & 1) && clicked) ? (
-       // clicked = 0;          
-      //); 
-      gfx_rect(x0, y0, w, h, 1); 
-      
-      gfx_gradrect(x0, y0, w, h, .5, .2, .7, 1, 0, 0, 0, 0, -.03, -.03, -.03, 0);
-      
-      gfx_mode = 1;
-      gfx_set(1., 0, 0, -1, 1);
-      gfx_rect(x0 + 1, y0 + 1, w  - 2, h - 2, 0); 
-      gfx_mode = 0;
-      gfx_set(1., 1., 1.);
-      gfx_rect(x0, y0, w, h, 0); 
-      gfx_set(.9, .8, 1);
-      
-      (mouse_x >= x0 && mouse_y >= y0 && mouse_x <= x0 + w && mouse_y <= y0 + h) ? (
-        
-        gfx_mode = 1;
-        gfx_gradrect(x0, y0, w, h, .4, .1, .8, .75, 0, 0, 0, 0, -.03, -.03, -.03, 0);
-        gfx_mode = 0;
-        gfx_setcursor(32649);
-        gfx_set(1, 1, 1);
-        (mouse_cap & 1) ? (
-          gfx_y += 1;
-          gfx_mode = 1;
-          gfx_gradrect(x0, y0, w, h, .6, .1, .2, -.25, 0, 0, 0, 0, -.03, -.03, -.03, 0);
-          gfx_mode = 0;
-          (buttonClicked[id] == 0 && released) ? (
-            buttonClicked[id] = 1;      
-            released = 0;
-          );
-        );        
-      );
-      
-      gfx_drawstr(str, 42|256, gfx_x, gfx_y + 5);
-    );
-    
-    
-    
     update();
     (sSendPCOnInit != 2) ? sendPC = 1;
     
@@ -739,28 +681,91 @@ filename:1,background.png
   
   sliderSpacing();
   DriveCC = initCC(28);  
-  invalidateCCSliders();   
-  requestProgram(sProgram - 1, 1, 1);
   logPrint("====================================================");   
-  logPrint("monoctrl loaded.");   
-  //logPrint("Set input to - MIDI, monologue KBD/KNOB, All channels.");
-  //logPrint("Set hardware MIDI output to - monologue SOUND.");
-  //logPrint("Enable input monitoring and arm this track.");   
-  //logPrint("====================================================");     
-
-
-@slider
-(sSendPCOnInit != 2) ? sendPC = 1;
+  //logPrint("monoctrl loaded.");   
+  logPrint("Set input to:");
+  logPrint("MIDI -> Monologue KBD/KNOB -> All channels");
+  logPrint("Set hardware MIDI output to:");
+  logPrint("Monologue SOUND (low precision)");
+  logPrint("Enable input monitoring and arm this track.");   
+  logPrint("====================================================");     
   
+  sProgramOld = sProgram;
+  
+  initSend = 1;
+  //sendPCToDevice();
+  
+
 @block
   update();      
   m = 1;
   loop(CCCount - 1, 
     ccSliderOld[m] = getSlider(m);
     m += 1;
-  ); 
+  );
+  (initSend) ? (
+    requestProgram(sProgram - 1, 0, 1);
+    invalidateCCSliders();   
+    sendCCToDevice();
+    initSend = 0;
+  );
 
-@gfx 560, 100
+@gfx 560, 110
+  function drawButton(x, y, str, id) (
+       gfx_x = x;
+       gfx_y = y;
+       gfx_measurestr(str, w, h);
+       gfx_set(.25, .25, .25);
+       gfx_set(.1, .1, .1);
+       x0 = gfx_x - w - 5;
+       y0 = gfx_y - h / 2 - 2;
+       w += 10;
+       h += 3;
+       
+       (!(mouse_cap & 1)) ? (
+         released = 1;
+       );       
+       
+       
+       //(!(mouse_cap & 1) && clicked) ? (
+        // clicked = 0;          
+       //); 
+       gfx_rect(x0, y0, w, h, 1); 
+       
+       gfx_gradrect(x0, y0, w, h, .5, .2, .7, 1, 0, 0, 0, 0, -.03, -.03, -.03, 0);
+       
+       gfx_mode = 1;
+       gfx_set(1., 0, 0, -1, 1);
+       gfx_rect(x0 + 1, y0 + 1, w  - 2, h - 2, 0); 
+       gfx_mode = 0;
+       gfx_set(.6, .4, .85);
+       gfx_rect(x0, y0, w, h, 0); 
+       gfx_mode = 0;
+       gfx_set(.9, .8, 1);
+       
+       (mouse_x >= x0 && mouse_y >= y0 && mouse_x <= x0 + w && mouse_y <= y0 + h) ? (
+         
+         gfx_mode = 1;
+         gfx_gradrect(x0, y0, w, h, .4, .1, .8, .75, 0, 0, 0, 0, -.03, -.03, -.03, 0);
+         gfx_mode = 0;
+         gfx_setcursor(32649);
+         gfx_set(1, 1, 1);
+         (mouse_cap & 1) ? (
+           gfx_y += 1;
+           gfx_mode = 1;
+           gfx_gradrect(x0, y0, w, h, .6, .1, .2, -.25, 0, 0, 0, 0, -.03, -.03, -.03, 0);
+           gfx_mode = 0;
+           (buttonClicked[id] == 0 && released) ? (
+             buttonClicked[id] = 1;      
+             released = 0;
+           );
+         );        
+       );
+       
+       gfx_drawstr(str, 42|256, gfx_x, gfx_y + 5);
+     );
+
+
   gfx_clear = 0;
   
   (gfx_w_old != gfx_w || gfx_h_old != gfx_h) ? logRedraw = 1;
@@ -875,7 +880,7 @@ filename:1,background.png
     );
     gfx_set(0.0, 0.0, 0.0);                    
     gfx_rect(logHorizontalOffset, 0, gfx_w - logHorizontalOffset, 25);
-    gfx_gradrect(logHorizontalOffset, 25, gfx_w - logHorizontalOffset, 20, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, -.05);
+    gfx_gradrect(logHorizontalOffset, 25, gfx_w - logHorizontalOffset, 6, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, -.166);
     gfx_set(1.0, 1.0, 1.0);      
     gfx_dest = -1;
     logRedraw = max(0, logRedraw - 1);
