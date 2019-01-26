@@ -281,7 +281,7 @@ filename:1,background.png
             loop(CCCount - 1, 
               _id == cc[g] ? (
                 isSwitch(g) ? (
-                  i == VCO2OctaveCC ? (
+                  g == VCO2OctaveCC ? (
                     getSlider(g) = floor((_val) / 42) - 1;   
                   ) : (
                     getSlider(g) = floor((_val + 1) / 64);   
@@ -593,7 +593,7 @@ filename:1,background.png
       //(CCChanged) ? blockSliderUpdate = 1;
                   
       (sProgram != sProgramOld) ? (  
-        (CCChanged) ?  logPrint("Slider update block");        
+        //(CCChanged) ?  logPrint("Slider update block");        
         requestProgram(sProgram - 1, !CCChanged && (sSendPCOnInit != 2), 1);                      
         invalidateCCSliders(); 
         sendCCToDevice();
@@ -609,7 +609,7 @@ filename:1,background.png
       sProgramOld = sProgram;
       (programRequest) ? (
         programRequestTimer += 1;
-        (programRequestTimer > 5) ? (
+        (programRequestTimer > 60) ? (
           logPrint("ERROR: Program request failed! Check your synth settings and make sure MIDI input is enabled on all channels in order to receive SySex messages.");
           programRequestTimer = 0;
           programRequest = 0;
