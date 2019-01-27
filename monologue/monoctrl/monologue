@@ -1,799 +1,751 @@
-desc: MonoCtrl (Blokatt)
+desc: monoctrl (Blokatt)
 //tags: korg monologue midi
 //author: Jan Vorisek
 
+slider1:s_channel=1<1,16,1>MIDI Channel
+slider2:s_block_midi_passthrough=1<0,1,1{All events,CC/PC (all events during playback),CC and PC only}>MIDI Passthrough
+slider3:s_send_pc_on_init=1:0<0,2,1{On program change and playback start,On program change only,Never (local preset)}>Auto-request program from synth
 
-slider1:sChannel=1<0,17,1{All,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16}>MIDI Channel
-slider2:sBlockMIDIPassthrough=1<0,1,1{All events,CC/PC (all events during playback),CC and PC only}>MIDI Passthrough
-slider3:sSendPCOnInit=1:0<0,2,1{On program change and playback start,On program change only,Never (local preset)}>Auto-request program from synth
+slider5:s_program=1<1,100,1>Program
+//================================//
+slider7:s_vco1_wave=2<0,1,3{Square,Triangle,Sawtooth}>VCO1 Waveform
+slider8:s_vco1_shape=0<0,127,1>VCO1 Shape
+//================================//
+slider10:s_vco2_wave=2<0,1,3{Noise,Triangle,Sawtooth}>VCO2 Waveform
+slider11:s_vco2_shape=0<0,127,1>VCO2 Shape
+slider12:s_vco2_pitch=0<-64,63,1>VCO2 Pitch
+slider13:s_vco2_octave=0<-1,2,1>VCO2 Octave
+//================================//
+slider15:s_vco_mode=1<0,1,3{Ring,No sync,Sync}>Sync/Ring
+//================================//
+slider17:s_vco1_level=127<0,127,1>VCO1 Level
+slider18:s_vco2_level=0<0,127,1>VCO2 Level
+//================================//
+slider20:s_filter_cutoff=127<0,127,1>Filter Cutoff
+slider21:s_filter_resonance=0<0,127,1>Filter Resonance
+//================================//
+slider23:s_lfo_wave=0<0,1,3{Square,Triangle,Sawtooth}>LFO Wave
+slider24:s_lfo_mode=0<0,1,3{One shot,Slow,Fast}>LFO Mode
+slider25:s_lfo_rate=0<0,127,1>LFO Rate
+slider26:s_lfo_intensity=0<-64,63,1>LFO Intensity
+slider27:s_lfo_target=0<0,1,3{Cutoff,Shape,Pitch}>LFO Target
+//================================//
+slider29:s_eg_type=0<0,1,3{Gate,Attack/Gate/Decay,Attack/Decay}>EG Type
+slider30:s_eg_attack=0<0,127,1>EG Attack
+slider31:s_eg_decay=0<0,127,1>EG Decay
+slider32:s_eg_intensity=0<-64,63,1>EG Intensity
+slider33:s_eg_target=0<0,1,3{Cutoff,Pitch 2,Pitch}>EG Target
+//================================//
+slider35:s_drive=0<0,127,1>Drive
+slider36:s_debug=0<0,1024,1>Debug
 
-slider5:sProgram=1<1,100,1>Program
-//================================//
-slider7:sVCO1Wave=2<0,1,3{Square,Triangle,Sawtooth}>VCO1 Waveform
-slider8:sVCO1Shape=0<0,127,1>VCO1 Shape
-//================================//
-slider10:sVCO2Wave=2<0,1,3{Noise,Triangle,Sawtooth}>VCO2 Waveform
-slider11:sVCO2Shape=0<0,127,1>VCO2 Shape
-slider12:sVCO2Pitch=0<-64,63,1>VCO2 Pitch
-slider13:sVCO2Octave=0<-1,2,1>VCO2 Octave
-//================================//
-slider15:sVCOMode=1<0,1,3{Ring,No sync,Sync}>Sync/Ring
-//================================//
-slider17:sVCO1Level=127<0,127,1>VCO1 Level
-slider18:sVCO2Level=0<0,127,1>VCO2 Level
-//================================//
-slider20:sFilterCutoff=127<0,127,1>Filter Cutoff
-slider21:sFilterResonance=0<0,127,1>Filter Resonance
-//================================//
-slider23:sLFOWave=0<0,1,3{Square,Triangle,Sawtooth}>LFO Wave
-slider24:sLFOMode=0<0,1,3{One shot,Slow,Fast}>LFO Mode
-slider25:sLFORate=0<0,127,1>LFO Rate
-slider26:sLFOIntensity=0<-64,63,1>LFO Intensity
-slider27:sLFOTarget=0<0,1,3{Cutoff,Shape,Pitch}>LFO Target
-//================================//
-slider29:sEGType=0<0,1,3{Gate,Attack/Gate/Decay,Attack/Decay}>EG Type
-slider30:sEGAttack=0<0,127,1>EG Attack
-slider31:sEGDecay=0<0,127,1>EG Decay
-slider32:sEGIntensity=0<-64,63,1>EG Intensity
-slider33:sEGTarget=0<0,1,3{Cutoff,Pitch 2,Pitch}>EG Target
-//================================//
-slider35:sDrive=0<0,127,1>Drive
-slider36:sDebug=0<0,1024,1>Debug
 filename:0,logo.png
 filename:1,background.png
 
 @init  
   ext_noinit = 1.0;
-  backW = 0;
-  backH = 0;
-  //ext_noinit = 1.0;   
-  CCCount = 23;
+  backw = 0;
+  backh = 0;
+
+  cc_count = 23;
   cc = 0;
   
-  // MEMORY OFFSETS
-  ccSlider = 100;
-  ccSliderOld = 200;
-  ccSliderAutomateID = 300; 
-  logLine = 400;
-  logLineCounts = 500;
-  buttonClicked = 600;
-  programRequestParam = 700;
+  // memory offsets
+  cc_slider = 100;
+  cc_slider_old = 200;
+  cc_slider_automateid = 300; 
+  log_line = 400;
+  log_line_counts = 500;
+  button_clicked = 600;
+  program_request_param = 700;
   //
   
   
-  //Testing for successful program request
-  programRequest = 0; 
-  programRequestTimer = 0;
+  //testing for successful program request
+  program_request = 0; 
+  program_request_timer = 0;
   
   //100 messages
   
   a = 0; 
   loop(99,
-    logLine[a] = 200 + a;
+    log_line[a] = 200 + a;
     a += 1;
   );
   //
-  logRedraw = 1;
-  logMaxMessageCount = 99;
-  logHorizontalOffset = 200;
+  log_redraw = 1;
+  log_max_message_count = 99;
+  log_horizontal_offset = 200;
   
   ccid = 0;
-  sliderCounter = 0;
-  lastPlayState = 0;
+  slider_counter = 0;
+  last_play_state = 0;
 
   gfx_w_old = gfx_w;
   gfx_h_old = gfx_w;
 
-  function logPrint(str)
+  function log_print(str)
   (
     //check overflow & shift
     #str = sprintf(#str, "> %s", str);
-    (strcmp(logLine[0], #str) != 0) ? (
-      logCurrentMessageCount = min(logCurrentMessageCount + 1, logMaxMessageCount);    
-      b = logMaxMessageCount - 1;
-      loop(logMaxMessageCount - 1,
-        strcpy(logLine[b], logLine[b - 1]);
-        logLineCounts[b] = logLineCounts[b - 1];
+    (strcmp(log_line[0], #str) != 0) ? (
+      log_current_message_count = min(log_current_message_count + 1, log_max_message_count);    
+      b = log_max_message_count - 1;
+      loop(log_max_message_count - 1,
+        strcpy(log_line[b], log_line[b - 1]);
+        log_line_counts[b] = log_line_counts[b - 1];
         b -= 1;
       );   
-      strcpy(logLine[0], #str);
-      logLineCounts[0] = 0;            
+      strcpy(log_line[0], #str);
+      log_line_counts[0] = 0;            
     ) : (      
-      logLineCounts[0] += 1;
+      log_line_counts[0] += 1;
     );     
-    logRedraw = 2;
+    log_redraw = 2;
   );  
   
-  function assignCC()
+  function assign_cc()
   (
-        ccid += 1;
-        ccid - 1;
+    ccid += 1;
+    ccid - 1;
   );
   
-  function initCC(id)
+  function init_cc(id)
   (
-      i = assignCC();
-      cc[i] = id;
-      ccSlider[i] = sliderCounter + 5;
-      ccSliderOld[i] = sliderCounter + 5;
-      ccSliderAutomateID[i] = i + 4;
-      sliderCounter += 1;
-      i;
+    i = assign_cc();
+    cc[i] = id;
+    cc_slider[i] = slider_counter + 5;
+    cc_slider_old[i] = slider_counter + 5;
+    cc_slider_automateid[i] = i + 4;
+    slider_counter += 1;
+    i;
   );
   
-  function invalidateCCSliders()
+  function invalidate_cc_sliders()
   (
-      c = 1;
-      loop(CCCount - 1, 
-        ccSliderOld[c] = -1;
-        c += 1;
-      ); 
+    c = 1;
+    loop(cc_count - 1, 
+      cc_slider_old[c] = -1;
+      c += 1;
+    ); 
   );
-  function invalidateSliders()
+  function invalidate_sliders()
   (
-      d = 0;
-      loop(CCCount - 1, 
-        ccSliderOld[d] = -1;
-        d += 1;
-      ); 
-  );
-  
-  function sliderSpacing()
-  (
-    sliderCounter += 1;
+    d = 0;
+    loop(cc_count - 1, 
+      cc_slider_old[d] = -1;
+      d += 1;
+    ); 
   );
   
-  function getSlider(id)
+  function slider_spacing()
   (
-    slider(ccSlider[id]);
+    slider_counter += 1;
   );
   
-  function randInt(x)
+  function get_slider(id)
+  (
+    slider(cc_slider[id]);
+  );
+  
+  function rand_int(x)
   (
     min(floor(rand(x + 1)), x);  
   );
   
-  function getSliderAutomate(id)
-   (
-     slider(ccSliderAutomateID[id]);
-   );
-  
-  function sendCC(ch, cc, val)
+  function get_slider_automate(id)
   (
-    cc == -1 ? midisend(0, 0xc0 | ch, val) : midisend(0, 0xb0 | ch, cc, val);
+    slider(cc_slider_automateid[id]);
   );
   
-  function sendUpdatedCC(ch, ccID, val)
+  function send_cc(cc, val)
   (
-    getSlider(ccID) != ccSliderOld[ccID] ? sendCC(ch, cc[ccID], val);
+    cc == -1 ? midisend(0, 0xc0 | (s_channel - 1), val) : midisend(0, 0xb0 | (s_channel - 1), cc, val);
   );
   
-  function updateCCParam(ccID, val)
+  function send_updated_cc(ccid, val)
+  (
+    get_slider(ccid) != cc_slider_old[ccid] ? send_cc(cc[ccid], val);
+  );
+  
+  function update_cc_param(ccid, val)
   (        
-    getSlider(ccID) = val;  
-    slider_automate(getSliderAutomate(ccID));        
+    get_slider(ccid) = val;  
+    slider_automate(get_slider_automate(ccid));        
   );
   
-  function isSwitch(cc)
+  function is_switch(cc)
   (
-    (cc == VCO2OctaveCC || cc == VCO1WaveCC || cc == VCO2WaveCC || cc == VCOModeCC ||cc ==  LFOWaveCC || cc == LFOModeCC || cc == LFOTargetCC || cc == EGTypeCC || cc == EGTargetCC);
+    (cc == vco2_octave_cc || cc == vco1_wave_cc || cc == vco2_wave_cc || cc == vco_mode_cc ||cc ==  lfo_wave_cc || cc == lfo_mode_cc || cc == lfo_target_cc || cc == eg_type_cc || cc == eg_target_cc);
   ); 
   
-  function isCenteredKnob(cc)
+  function is_centered_knob(cc)
   (
-    (cc == VCO2PitchCC || cc == LFOIntensityCC || cc == EGIntensityCC);
+    (cc == vco2_pitch_cc || cc == lfo_intensity_cc || cc == eg_intensity_cc);
   ); 
   
-  function sendPCToDevice()
+  function send_pc_to_device()
   (
-    sendUpdatedCC(ch, ProgramCC, sProgram - 1); 
+    send_updated_cc(program_cc, s_program - 1); 
   );
   
-  function bufSubStr(bfr, a, b)
+  function buf_sub_str(bfr, a, b)
   (
     #str = "";
     e = 0;
     loop(b, 
       sprintf(#str, "%s%c", #str,bfr[a + e]);
       e += 1;
-    );
-    
+    );    
     #str;      
   );
 
-  function sendCCToDevice()
-  (                    
-      f = 1;
-      loop(CCCount - 1,      
-        isSwitch(f) ? (
-          f == VCO2OctaveCC ? (
-            sendUpdatedCC(ch, f, min((getSlider(f) + 1) * 42, 127));   
-          ) : (
-            sendUpdatedCC(ch, f, min(getSlider(f) * 64, 127));  
-          )
-        ) : (           
-          (isCenteredKnob(f)) ? (   
-            sendUpdatedCC(ch, f, getSlider(f) + 64);                                                          
-          ) : (
-            sendUpdatedCC(ch, f, getSlider(f));                                            
-          )
-        );        
-        f += 1;
-      );
+  function send_cc_to_device()
+  (                   
+    f = 1;
+    loop(cc_count - 1,      
+      is_switch(f) ? (
+        f == vco2_octave_cc ? (
+          send_updated_cc(f, min((get_slider(f) + 1) * 42, 127));   
+        ) : (
+          send_updated_cc(f, min(get_slider(f) * 64, 127));  
+        )
+      ) : (           
+        (is_centered_knob(f)) ? (   
+          send_updated_cc(f, get_slider(f) + 64);                                                          
+        ) : (
+          send_updated_cc(f, get_slider(f));                                            
+        )
+      );        
+      f += 1;
     );
+  );
     
     
-  function requestProgram(id, updateSliders, sendTwice)(
-      //midisend_str(0,"\xF0\xFE\x7F\x06\x01\xF7");
-       #send = "\xF0\x42\x30\x00\x01\x44\x1C";        
-      // #temp += 10;
-       send = 1000;
-       send[0] = 0xF0;
-       send[1] = 0x42;
-       send[2] = 0x30;
-       send[3] = 0x00;
-       send[4] = 0x01;
-       send[5] = 0x44;
-       send[6] = 0x1C;
-       send[7] = sProgram - 1;
-       send[8] = 0x00;
-       send[9] = 0xf7;     
-       midisend_buf(0,send,10); 
-       sendPCToDevice();
-       programRequestParam[id] = (!updateSliders << 1) | sendTwice;
-       blockSliderUpdate = !updateSliders;
-       programRequest = updateSliders;
-      //err = midisend_str(0, "\xf0\x7E\x7F\x06\x01\xf7");
- 
-      /*
-      #send = "\xF0\x42\x30\x00\x01\x44\x1C";        
-       // #temp += 10;
-      programRequestParam[id] = !updateSliders;
-      send = 1000;
-      send[0] = 0xF0;
-      send[1] = 0x42;
-      send[2] = 0x30;
-      send[3] = 0x00;
-      send[4] = 0x01;
-      send[5] = 0x44;
-      send[6] = 0x1C;
-      send[7] = id;
-      send[8] = 0x00;
-      send[9] = 0xf7;     
-      midisend_buf(1, send, 10); 
-      sendPCToDevice();
-      blockSliderUpdate = !updateSliders;
-      programRequest = updateSliders;
-      */
-    );
-    
-  function sendMIDI(ch)
-    (           
-      buf = 10000;
-      maxlen = 65536;
+  function request_program(id, update_sliders, send_twice)(
+    //midisend_str(0,"\x_f0\xfe\x7f\x06\x01\x_f7");
+    #send = "\xf0\x42\x30\x00\x01\x44\x1c";        
+    // #temp += 10;
+    send = 1000;
+    send[0] = 0xf0;
+    send[1] = 0x42;
+    send[2] = 0x30;
+    send[3] = 0x00;
+    send[4] = 0x01;
+    send[5] = 0x44;
+    send[6] = 0x1c;
+    send[7] = s_program - 1;
+    send[8] = 0x00;
+    send[9] = 0xf7;     
+    midisend_buf(0,send,10); 
+    send_pc_to_device();
+    program_request_param[id] = (!update_sliders << 1) | send_twice;
+    block_slider_update = !update_sliders;
+    program_request = update_sliders;
+  );
 
+  function send_midi() (           
+    buf = 10000;
+    maxlen = 65536;
 
-      while ((recvlen = midirecv_buf(offset,buf,maxlen)) > 0) (
-          recvlen <= 3 && buf[0] == 0xb0 ? (
-            _id =  buf[1];
-            _val =  buf[2];
-            g = 1;
-            loop(CCCount - 1, 
-              _id == cc[g] ? (
-                isSwitch(g) ? (
-                  g == VCO2OctaveCC ? (
-                    getSlider(g) = floor((_val) / 42) - 1;   
-                  ) : (
-                    getSlider(g) = floor((_val + 1) / 64);   
-                  )
-                ) : (           
-                  (isCenteredKnob(g)) ? (   
-                    getSlider(g) = _val - 64;                                                            
-                  ) : (
-                    getSlider(g) = _val;                                            
-                  )
-                );
-                slider_automate(getSliderAutomate(g));          
-              );
-              g += 1;
-            );  
-            
-          ) : ( //Program change
-            
-            //msg1 == 0xc0 | ch ? (    
-            recvlen <= 3 && buf[0] == 0xc0 ? (            
-             getSlider(ProgramCC) = buf[1] + 1;  
-             slider_automate(getSlider(ProgramCC));                   
-            ) : (
-              //F0 7E 00 06 02 42 44 01 00 00 01 00 0E 00 F7
-              //temp = "asd";
-    
-              (recvlen >= 518 && buf[0] == 0xF0) ? (     
-                 
-                offset = 6;
-                blockSliderUpdate = 0;        
-                program = -1;      
-                (buf[offset] == 0x4C) ? (
-                    program = buf[offset + 1];
-                    sDebug = program;
-                    sProgram = program + 1;
-                    blockSliderUpdate = programRequestParam[buf[offset + 1]] >> 1;
-                    offset += 4;
+    while ((recvlen = midirecv_buf(offset, buf, maxlen)) > 0) (
+      event_type = buf[0] >> 4;
+      channel = buf[0] & 15;
+      (channel == s_channel - 1) ? (
+        recvlen <= 3 && event_type == 0xb ? (
+          val =  buf[2];
+          g = 1;
+          loop(cc_count - 1, 
+            buf[1] == cc[g] ? (
+              is_switch(g) ? (
+                g == vco2_octave_cc ? (
+                  get_slider(g) = floor((val) / 42) - 1;   
                 ) : (
-                    offset += 2;
-                );     
-                
-                i = 0;
-  
-                #temp = bufSubStr(buf, offset, 4);
-                (strcmp(#temp,  "PROG") == 0 && !blockSliderUpdate) ? (      
-                  programRequest = 0;
-                  programRequestTimer = 0;
-                  //sprintf(#temp,"%f",rand(5));
-                  offset += 4;
-                  
-                  #temp = "";
-                  
-                  h = 0;
-                  valid = 0;
-                  loop(14,
-                      (buf[offset + h] != 0 && h != 11)? (
-                        sprintf(#temp, "%s%c", #temp, buf[offset + h]);
-                        valid += 1;
-                      ); 
-                      h += 1;
-                  );                  
-             
-                  ///// VCO1 LEVEL
-                  offset += 11;        
-                  value = ((buf[offset] & 64) << 3);
-                  value = value | ((buf[offset + 7] & 127) << 2);
-                  value = value | (buf[offset + 22] & 3);
-                  updateCCParam(VCO1LevelCC, value >> 3);
-                  
-                  
-                  /////VCO2 SHAPE
-                  value = ((buf[offset] & 32) << 4);
-                  value = value | ((buf[offset + 6] & 127) << 2);
-                  value = value | ((buf[offset + 20] & 12) >> 2);
-                  updateCCParam(VCO2ShapeCC, value >> 3);  
-                  
-                  
-                  ///// VCO2 PITCH
-                  value = ((buf[offset] & 16) << 5);
-                  value = value | ((buf[offset + 5] & 127) << 2);
-                  value = value | (buf[offset + 20] & 3);  
-                  updateCCParam(VCO2PitchCC, value >> 3 - 64);      
-                  
-                  ///// VCO1 SHAPE
-                  value = ((buf[offset] & 8) << 6);
-                  value = value | ((buf[offset + 4] & 127) << 2);
-                  value = value | ((buf[offset + 19] & 12) >> 2);        
-                  updateCCParam(VCO1ShapeCC, value >> 3);
-                  
-                  ///// LFO RATE
-                  offset += 8;        
-                  value = (buf[offset] & 64) << 3;
-                  value = value | ((buf[offset + 7] & 127) << 2);
-                  value = value | ((buf[offset + 17] & 12) >> 2);    
-                  updateCCParam(LFORateCC, value >> 3);    
-                  
-                  ///// EG INTENSITY
-                  value = (buf[offset] & 32) << 4;
-                  value = value | ((buf[offset + 6] & 127) << 2);
-                  value = value | (buf[offset + 17] & 3);
-                  updateCCParam(EGIntensityCC, (value >> 3) - 64);
-                  
-                  
-                  ///// EG DECAY
-                  value = (buf[offset] & 16) << 5;
-                  value = value | ((buf[offset + 5] & 127) << 2);
-                  value = value | ((buf[offset + 15] & 48) >> 4);
-                  updateCCParam(EGDecayCC, value >> 3);
-                  
-                  
-                  ///// EG ATTACK
-                  value = (buf[offset] & 8) << 6;
-                  value = value | ((buf[offset + 4] & 127) << 2);
-                  value = value | ((buf[offset + 15] & 12) >> 2);      
-                  updateCCParam(EGAttackCC, value >> 3);  
-                  
-                  ///// FILTER RESONANCE
-                  value = (buf[offset] & 4) << 7;
-                  value = value | ((buf[offset + 3] & 127) << 2);
-                  value = value | ((buf[offset + 8] & 32) >> 4);
-                  value = value | ((buf[offset + 14] & 64) >> 6);    
-                  updateCCParam(ResonanceCC, value >> 3);   
-                  
-                  ///// FILTER CUTOFF
-                  value = (buf[offset] & 2) << 8;
-                  value = value | ((buf[offset + 2] & 127) << 2);
-                  value = value | ((buf[offset + 14] & 48) >> 4);
-                  updateCCParam(CutoffCC, value >> 3);
-                  
-                  
-                  ///// VCO2 LEVEL
-                  value = ((buf[offset] & 1) << 9);
-                  value = value | ((buf[offset + 1] & 127) << 2);
-                  value = value | (buf[offset + 14] & 12) >> 2;
-                  updateCCParam(VCO2LevelCC, value >> 3);
-                  
-                  
-                  ///// EG TARGET
-                  offset += 8;        
-                  value = (buf[offset] & 64) >> 5;
-                  value = value | ((buf[offset + 7] & 64) >> 6);
-                  updateCCParam(EGTargetCC, value);
-                  
-                  ///// VCO2 WAVE
-                  value = ((buf[offset] & 8) >> 2);
-                  value = value | ((buf[offset + 4] & 64) >> 6);
-                  updateCCParam(VCO2WaveCC, value);
-                  
-                  ///// VCO1 WAVE
-                  value = ((buf[offset] & 4) >> 1);
-                  value = value | ((buf[offset + 3] & 64) >> 6);
-                  updateCCParam(VCO1WaveCC, value);
-                  
-                  ///// DRIVE
-                  value = ((buf[offset] & 2) << 8);
-                  value = value | ((buf[offset + 2] & 127) << 2);
-                  value = value | ((buf[offset + 8] & 1) << 1);
-                  value = value | ((buf[offset + 9] & 64) >> 6);
-                  updateCCParam(DriveCC, value >> 3);
-                  
-                  ///// LFO INTENSITY
-                  value = (buf[offset] & 1) << 9;
-                  value = value | ((buf[offset + 1] & 127) << 2);
-                  value = value | ((buf[offset + 9] & 48) >> 4);
-                  updateCCParam(LFOIntensityCC, (value >> 3) - 64);
-                  
-                  ///// VCO2 OCTAVE
-                  offset += 4;
-                  value = (buf[offset] & 48) >> 4;
-                  updateCCParam(VCO2OctaveCC, value - 1);
-                  
-                  ///// RING/SYNC
-                  offset += 1;
-                  value = (buf[offset] & 3);
-                  updateCCParam(VCOModeCC, value);
-                  
-                  ///// EG TYPE
-                  offset += 2;        
-                  value = (buf[offset] & 3);     
-                  updateCCParam(EGTypeCC, value );
-                  
-                  ///// LFO TARGET    
-                  offset += 3;        
-                  value = (buf[offset] & 48) >> 4;
-                  updateCCParam(LFOTargetCC, value);
-                  
-                  ///// LFO MODE
-                  value = (buf[offset] & 12) >> 2;
-                  updateCCParam(LFOModeCC, value);
-                  
-                  ///// LFO WAVE
-                  value = (buf[offset] & 3);
-                  updateCCParam(LFOWaveCC, value);
-                  (program != -1) ? (
-                    (programRequestParam[program] & 1) ? echoProgramRequest = 5;
-                    //programRequestParam[program] = 0;
-                  );
-                  (program == -1 || (program >= 0 && !programRequestParam[program] & 1)) ? ( 
-                    logPrint(sprintf(#, "RECV: Program '%s'", #temp)); 
-                  ); 
-                  //ccSliderOld[ProgramCC] = ccSlider[ProgramCC];              
-                  //sSysex = value;
-                );      
-                invalidateCCSliders(); 
-                sendCCToDevice();  
-                blockSliderUpdate = 0;    
-                i = 1;
-                loop(CCCount - 1, 
-                  ccSliderOld[i] = getSlider(i);
-                  i += 1;
-                );                 
-              ) : (
-                ((sBlockMIDIPassthrough == 0) || (sBlockMIDIPassthrough == 1 && play_state  == 1)) ? midisend_buf(offset,buf,recvlen);                
+                  get_slider(g) = floor((val + 1) / 64);   
+                )
+              ) : (           
+                (is_centered_knob(g)) ? (   
+                  get_slider(g) = val - 64;                                                            
+                ) : (
+                  get_slider(g) = val;                                            
+                )
               );
-            );            
-          ); 
-       );    
+              slider_automate(get_slider_automate(g));          
+            );
+            g += 1;
+          );  
+          
+        ) : ( //program change
+          
+          recvlen <= 3 && event_type == 0xc ? (            
+           get_slider(program_cc) = buf[1] + 1;  
+           slider_automate(get_slider(program_cc));                   
+          ) : (  
+    
+            (recvlen >= 518 && event_type == 0xf) ? (     
+               
+              offset = 6;
+              block_slider_update = 0;        
+              program = -1;      
+              (buf[offset] == 0x4c) ? (
+                  program = buf[offset + 1];
+                  s_debug = program;
+                  s_program = program + 1;
+                  block_slider_update = program_request_param[buf[offset + 1]] >> 1;
+                  offset += 4;
+              ) : (
+                  offset += 2;
+              );     
               
+              i = 0;
+    
+              #temp = buf_sub_str(buf, offset, 4);
+              (strcmp(#temp,  "PROG") == 0 && !block_slider_update) ? (      
+                program_request = 0;
+                program_request_timer = 0;
+                //sprintf(#temp,"%f",rand(5));
+                offset += 4;
+                
+                #temp = "";
+                
+                h = 0;
+                valid = 0;
+                loop(14,
+                    (buf[offset + h] != 0 && h != 11)? (
+                      sprintf(#temp, "%s%c", #temp, buf[offset + h]);
+                      valid += 1;
+                    ); 
+                    h += 1;
+                );                  
            
-       sendCCToDevice();
-       
-      (buttonClicked[3]) ? requestProgram(sProgram -  1, 1, 1);
-      (buttonClicked[2]) ? (
-          invalidateSliders();
-          sendCCToDevice();
-      );  
-      
-      (buttonClicked[0]) ? (
-        updateCCParam(VCO1WaveCC, min(2, max(0, sVCO1Wave + randInt(2) - 1)));
-        updateCCParam(VCO1ShapeCC, min(127, max(0, sVCO1Shape + randInt(10) - 5)));          
-        updateCCParam(VCO2WaveCC, min(2, max(0, sVCO2Wave + randInt(2) - 1)));
-        updateCCParam(VCO2ShapeCC,  min(127, max(0, sVCO2Shape + randInt(10) - 5)));          
-        updateCCParam(VCO2PitchCC, min(63, max(-64, sVCO2Pitch + randInt(10) - 5)));  
-        updateCCParam(VCO2OctaveCC, min(2, max(-1, sVCO2Octave + randInt(2) - 1)));
-        updateCCParam(VCOModeCC, min(2, max(0, sVCOMode + randInt(2) - 1)));
-        updateCCParam(VCO1LevelCC, min(127, max(0, sVCO1Level + randInt(10) - 5)));          
-        updateCCParam(VCO2LevelCC, min(127, max(0, sVCO2Level + randInt(10) - 5)));          
-        updateCCParam(CutoffCC, min(127, max(0, sFilterCutoff + randInt(10) - 5)));          
-        updateCCParam(ResonanceCC, min(127, max(0, sFilterResonance + randInt(10) - 5)));         
-        updateCCParam(LFOWaveCC, min(2, max(0, sLFOWave + randInt(2) - 1)));
-        updateCCParam(LFOModeCC, min(2, max(0, sLFOMode + randInt(2) - 1)));
-        updateCCParam(LFORateCC, min(127, max(0, sLFORate + randInt(10) - 5)));    
-        updateCCParam(LFOIntensityCC, min(63, max(-64, sLFOIntensity + randInt(10) - 5)));  
-        updateCCParam(LFOTargetCC, min(2, max(0, sLFOTarget + randInt(2) - 1)));
-        updateCCParam(EGTypeCC ,min(2, max(0, sEGType + randInt(2) - 1)));          
-        updateCCParam(EGAttackCC, min(127, max(0, sEGAttack + randInt(6) - 3)));    
-        updateCCParam(EGDecayCC, min(127, max(0, sEGDecay + randInt(10) - 5)));    
-        updateCCParam(EGIntensityCC, min(63, max(-64, sEGIntensity + randInt(10) - 5)));  
-        updateCCParam(EGTargetCC, min(2, max(0, sEGTarget + randInt(2) - 1)));
-        updateCCParam(DriveCC, min(127, max(0, sDrive + randInt(10) - 5)));         
-        logPrint("Sliders mutated.");
-        invalidateCCSliders();       
-        sendCCToDevice();
-      );
-  
-      
-      (buttonClicked[1]) ? (
-        updateCCParam(VCO1WaveCC, randInt(2));
-        updateCCParam(VCO1ShapeCC, randInt(0x7f));        
-        updateCCParam(VCO2WaveCC, randInt(2));
-        updateCCParam(VCO2ShapeCC, randInt(0x7f));
-        updateCCParam(VCO2PitchCC, -64 + randInt(0x7f));
-        updateCCParam(VCO2OctaveCC, -1 + randInt(3));        
-        updateCCParam(VCOModeCC, randInt(2));        
-        updateCCParam(VCO1LevelCC, randInt(0x7f));
-        updateCCParam(VCO2LevelCC, randInt(0x7f));        
-        updateCCParam(CutoffCC, randInt(0x7f));
-        updateCCParam(ResonanceCC, randInt(0x7f));        
-        updateCCParam(LFOWaveCC, randInt(2));
-        updateCCParam(LFOModeCC, randInt(2));
-        updateCCParam(LFORateCC, randInt(127));
-        updateCCParam(LFOIntensityCC, -64 + randInt(0x7f));
-        updateCCParam(LFOTargetCC,  randInt(2));        
-        updateCCParam(EGTypeCC, randInt(2));
-        updateCCParam(EGAttackCC,  floor(min(pow(rand(1), 8) * 0x7f, 0x7f)));
-        updateCCParam(EGDecayCC, floor(min(0x7f - pow(rand(1), 5) * 0x7f, 0x7f)));
-        updateCCParam(EGIntensityCC, -64 + randInt(0x7f));
-        updateCCParam(EGTargetCC, randInt(2));
-        updateCCParam(DriveCC, randInt(0x7f));
-        logPrint("Sliders randomised.");
-        invalidateCCSliders();       
-        sendCCToDevice();
+                ///// vco1 level
+                offset += 11;        
+                value = ((buf[offset] & 64) << 3);
+                value = value | ((buf[offset + 7] & 127) << 2);
+                value = value | (buf[offset + 22] & 3);
+                update_cc_param(vco1_level_cc, value >> 3);
+                
+                
+                /////vco2 shape
+                value = ((buf[offset] & 32) << 4);
+                value = value | ((buf[offset + 6] & 127) << 2);
+                value = value | ((buf[offset + 20] & 12) >> 2);
+                update_cc_param(vco2_shape_cc, value >> 3);  
+                
+                
+                ///// vco2 pitch
+                value = ((buf[offset] & 16) << 5);
+                value = value | ((buf[offset + 5] & 127) << 2);
+                value = value | (buf[offset + 20] & 3);  
+                update_cc_param(vco2_pitch_cc, value >> 3 - 64);      
+                
+                ///// vco1 shape
+                value = ((buf[offset] & 8) << 6);
+                value = value | ((buf[offset + 4] & 127) << 2);
+                value = value | ((buf[offset + 19] & 12) >> 2);        
+                update_cc_param(vco1_shape_cc, value >> 3);
+                
+                ///// lfo rate
+                offset += 8;        
+                value = (buf[offset] & 64) << 3;
+                value = value | ((buf[offset + 7] & 127) << 2);
+                value = value | ((buf[offset + 17] & 12) >> 2);    
+                update_cc_param(lfo_rate_cc, value >> 3);    
+                
+                ///// eg intensity
+                value = (buf[offset] & 32) << 4;
+                value = value | ((buf[offset + 6] & 127) << 2);
+                value = value | (buf[offset + 17] & 3);
+                update_cc_param(eg_intensity_cc, (value >> 3) - 64);
+                
+                
+                ///// eg decay
+                value = (buf[offset] & 16) << 5;
+                value = value | ((buf[offset + 5] & 127) << 2);
+                value = value | ((buf[offset + 15] & 48) >> 4);
+                update_cc_param(eg_decay_cc, value >> 3);
+                
+                
+                ///// eg attack
+                value = (buf[offset] & 8) << 6;
+                value = value | ((buf[offset + 4] & 127) << 2);
+                value = value | ((buf[offset + 15] & 12) >> 2);      
+                update_cc_param(eg_attack_cc, value >> 3);  
+                
+                ///// filter resonance
+                value = (buf[offset] & 4) << 7;
+                value = value | ((buf[offset + 3] & 127) << 2);
+                value = value | ((buf[offset + 8] & 32) >> 4);
+                value = value | ((buf[offset + 14] & 64) >> 6);    
+                update_cc_param(resonance_cc, value >> 3);   
+                
+                ///// filter cutoff
+                value = (buf[offset] & 2) << 8;
+                value = value | ((buf[offset + 2] & 127) << 2);
+                value = value | ((buf[offset + 14] & 48) >> 4);
+                update_cc_param(cutoff_cc, value >> 3);
+                
+                
+                ///// vco2 level
+                value = ((buf[offset] & 1) << 9);
+                value = value | ((buf[offset + 1] & 127) << 2);
+                value = value | (buf[offset + 14] & 12) >> 2;
+                update_cc_param(vco2_level_cc, value >> 3);
+                
+                
+                ///// eg target
+                offset += 8;        
+                value = (buf[offset] & 64) >> 5;
+                value = value | ((buf[offset + 7] & 64) >> 6);
+                update_cc_param(eg_target_cc, value);
+                
+                ///// vco2 wave
+                value = ((buf[offset] & 8) >> 2);
+                value = value | ((buf[offset + 4] & 64) >> 6);
+                update_cc_param(vco2_wave_cc, value);
+                
+                ///// vco1 wave
+                value = ((buf[offset] & 4) >> 1);
+                value = value | ((buf[offset + 3] & 64) >> 6);
+                update_cc_param(vco1_wave_cc, value);
+                
+                ///// drive
+                value = ((buf[offset] & 2) << 8);
+                value = value | ((buf[offset + 2] & 127) << 2);
+                value = value | ((buf[offset + 8] & 1) << 1);
+                value = value | ((buf[offset + 9] & 64) >> 6);
+                update_cc_param(drive_cc, value >> 3);
+                
+                ///// lfo intensity
+                value = (buf[offset] & 1) << 9;
+                value = value | ((buf[offset + 1] & 127) << 2);
+                value = value | ((buf[offset + 9] & 48) >> 4);
+                update_cc_param(lfo_intensity_cc, (value >> 3) - 64);
+                
+                ///// vco2 octave
+                offset += 4;
+                value = (buf[offset] & 48) >> 4;
+                update_cc_param(vco2_octave_cc, value - 1);
+                
+                ///// ring/sync
+                offset += 1;
+                value = (buf[offset] & 3);
+                update_cc_param(vco_mode_cc, value);
+                
+                ///// eg type
+                offset += 2;        
+                value = (buf[offset] & 3);     
+                update_cc_param(eg_type_cc, value );
+                
+                ///// lfo target    
+                offset += 3;        
+                value = (buf[offset] & 48) >> 4;
+                update_cc_param(lfo_target_cc, value);
+                
+                ///// lfo mode
+                value = (buf[offset] & 12) >> 2;
+                update_cc_param(lfo_mode_cc, value);
+                
+                ///// lfo wave
+                value = (buf[offset] & 3);
+                update_cc_param(lfo_wave_cc, value);
+                (program != -1) ? (
+                  (program_request_param[program] & 1) ? echo_program_request = 5;
+                  //program_request_param[program] = 0;
+                );
+                (program == -1 || (program >= 0 && !program_request_param[program] & 1)) ? ( 
+                  log_print(sprintf(#, "RECV: Program '%s'", #temp)); 
+                ); 
+                //cc_slider_old[program_cc] = cc_slider[program_cc];              
+                //s_sysex = value;
+              );      
+              invalidate_cc_sliders(); 
+              send_cc_to_device();  
+              block_slider_update = 0;    
+              i = 1;
+              loop(cc_count - 1, 
+                cc_slider_old[i] = get_slider(i);
+                i += 1;
+              );                 
+            ) : (
+              ((s_block_midi_passthrough == 0) || (s_block_midi_passthrough == 1 && play_state  == 1)) ? midisend_buf(offset,buf,recvlen);                
+            );
+          );
+        );            
+      ); 
     );    
+                       
+    send_cc_to_device();
+     
+    (button_clicked[3]) ? request_program(s_program -  1, 1, 1);
+    (button_clicked[2]) ? (
+      invalidate_sliders();
+      send_cc_to_device();
+    );  
+    
+    (button_clicked[0]) ? (
+      update_cc_param(vco1_wave_cc, min(2, max(0, s_vco1_wave + rand_int(2) - 1)));
+      update_cc_param(vco1_shape_cc, min(127, max(0, s_vco1_shape + rand_int(10) - 5)));          
+      update_cc_param(vco2_wave_cc, min(2, max(0, s_vco2_wave + rand_int(2) - 1)));
+      update_cc_param(vco2_shape_cc,  min(127, max(0, s_vco2_shape + rand_int(10) - 5)));          
+      update_cc_param(vco2_pitch_cc, min(63, max(-64, s_vco2_pitch + rand_int(10) - 5)));  
+      update_cc_param(vco2_octave_cc, min(2, max(-1, s_vco2_octave + rand_int(2) - 1)));
+      update_cc_param(vco_mode_cc, min(2, max(0, s_vco_mode + rand_int(2) - 1)));
+      update_cc_param(vco1_level_cc, min(127, max(0, s_vco1_level + rand_int(10) - 5)));          
+      update_cc_param(vco2_level_cc, min(127, max(0, s_vco2_level + rand_int(10) - 5)));          
+      update_cc_param(cutoff_cc, min(127, max(0, s_filter_cutoff + rand_int(10) - 5)));          
+      update_cc_param(resonance_cc, min(127, max(0, s_filter_resonance + rand_int(10) - 5)));         
+      update_cc_param(lfo_wave_cc, min(2, max(0, s_lfo_wave + rand_int(2) - 1)));
+      update_cc_param(lfo_mode_cc, min(2, max(0, s_lfo_mode + rand_int(2) - 1)));
+      update_cc_param(lfo_rate_cc, min(127, max(0, s_lfo_rate + rand_int(10) - 5)));    
+      update_cc_param(lfo_intensity_cc, min(63, max(-64, s_lfo_intensity + rand_int(10) - 5)));  
+      update_cc_param(lfo_target_cc, min(2, max(0, s_lfo_target + rand_int(2) - 1)));
+      update_cc_param(eg_type_cc ,min(2, max(0, s_eg_type + rand_int(2) - 1)));          
+      update_cc_param(eg_attack_cc, min(127, max(0, s_eg_attack + rand_int(6) - 3)));    
+      update_cc_param(eg_decay_cc, min(127, max(0, s_eg_decay + rand_int(10) - 5)));    
+      update_cc_param(eg_intensity_cc, min(63, max(-64, s_eg_intensity + rand_int(10) - 5)));  
+      update_cc_param(eg_target_cc, min(2, max(0, s_eg_target + rand_int(2) - 1)));
+      update_cc_param(drive_cc, min(127, max(0, s_drive + rand_int(10) - 5)));         
+      log_print("Sliders mutated.");
+      invalidate_cc_sliders();       
+      send_cc_to_device();
     );
+    
+    (button_clicked[1]) ? (
+      update_cc_param(vco1_wave_cc, rand_int(2));
+      update_cc_param(vco1_shape_cc, rand_int(0x7f));        
+      update_cc_param(vco2_wave_cc, rand_int(2));
+      update_cc_param(vco2_shape_cc, rand_int(0x7f));
+      update_cc_param(vco2_pitch_cc, -64 + rand_int(0x7f));
+      update_cc_param(vco2_octave_cc, -1 + rand_int(3));        
+      update_cc_param(vco_mode_cc, rand_int(2));        
+      update_cc_param(vco1_level_cc, rand_int(0x7f));
+      update_cc_param(vco2_level_cc, rand_int(0x7f));        
+      update_cc_param(cutoff_cc, rand_int(0x7f));
+      update_cc_param(resonance_cc, rand_int(0x7f));        
+      update_cc_param(lfo_wave_cc, rand_int(2));
+      update_cc_param(lfo_mode_cc, rand_int(2));
+      update_cc_param(lfo_rate_cc, rand_int(127));
+      update_cc_param(lfo_intensity_cc, -64 + rand_int(0x7f));
+      update_cc_param(lfo_target_cc,  rand_int(2));        
+      update_cc_param(eg_type_cc, rand_int(2));
+      update_cc_param(eg_attack_cc,  floor(min(pow(rand(1), 8) * 0x7f, 0x7f)));
+      update_cc_param(eg_decay_cc, floor(min(0x7f - pow(rand(1), 5) * 0x7f, 0x7f)));
+      update_cc_param(eg_intensity_cc, -64 + rand_int(0x7f));
+      update_cc_param(eg_target_cc, rand_int(2));
+      update_cc_param(drive_cc, rand_int(0x7f));
+      log_print("Sliders randomised.");
+      invalidate_cc_sliders();       
+      send_cc_to_device();
+    );    
+  );
             
-    function onPlaybackStart()(
-      sendCCToDevice();
-      (sSendPCOnInit == 0) ? requestProgram(sProgram - 1, 1, 1);
+  function on_playback_start()(
+    send_cc_to_device();
+    (s_send_pc_on_init == 0) ? request_program(s_program - 1, 1, 1);
+  );
+    
+  function update()
+  (          
+    send_midi();
+    cc_changed = 0;
+    k = 1;
+    loop(cc_count - 1,
+      (get_slider(k) != cc_slider_old[k]) ? cc_changed = 1;
+      k += 1;
+    );
+    //(cc_changed) ? block_slider_update = 1;
+                
+    (s_program != s_program_old) ? (  
+      //(cc_changed) ?  log_print("slider update block");        
+      request_program(s_program - 1, !cc_changed && (s_send_pc_on_init != 2), 1);                      
+      invalidate_cc_sliders(); 
+      send_cc_to_device();
+    );   
+    
+    (echo_program_request > 0) ? (
+      (echo_program_request == 1) ? (
+        request_program(s_program - 1, 1, 0);      
+      );
+      echo_program_request -= 1;
+    );
+      
+    s_program_old = s_program;
+    (program_request) ? (
+      program_request_timer += 1;
+      (program_request_timer > 60) ? (
+        log_print("ERROR: Program request failed! Check your synth settings and make sure MIDI input is enabled on all channels in order to receive SySex messages.");
+        program_request_timer = 0;
+        program_request = 0;
+      );
+    );    
+      
+    l = 0;
+    loop(10,  
+      button_clicked[l] = 0;
+      l += 1;
+    );
+     
+    (play_state && !last_play_state) ? (
+      //started playback
+      on_playback_start();
     );
     
-    function update()
-    (      
-      
-      sChannel ? (
-          sendMIDI(sChannel - 1);
-        ):(
-          j = 0;
-          loop(16, 
-            sendMIDI(j);
-            j += 1;
-          );    
-        );
-      CCChanged = 0;
-      k = 1;
-      loop(CCCount - 1,
-        (getSlider(k) != ccSliderOld[k]) ? CCChanged = 1;
-        k += 1;
-      );
-      //(CCChanged) ? blockSliderUpdate = 1;
-                  
-      (sProgram != sProgramOld) ? (  
-        //(CCChanged) ?  logPrint("Slider update block");        
-        requestProgram(sProgram - 1, !CCChanged && (sSendPCOnInit != 2), 1);                      
-        invalidateCCSliders(); 
-        sendCCToDevice();
-      );   
-      
-      (echoProgramRequest > 0) ? (
-        (echoProgramRequest == 1) ? (
-          requestProgram(sProgram - 1, 1, 0);      
-        );
-        echoProgramRequest -= 1;
-      );
-        
-      sProgramOld = sProgram;
-      (programRequest) ? (
-        programRequestTimer += 1;
-        (programRequestTimer > 60) ? (
-          logPrint("ERROR: Program request failed! Check your synth settings and make sure MIDI input is enabled on all channels in order to receive SySex messages.");
-          programRequestTimer = 0;
-          programRequest = 0;
-        );
-      );    
-        
-      l = 0;
-      loop(10,  
-        buttonClicked[l] = 0;
-        l += 1;
-      );
-       
-      (play_state && !lastPlayState) ? (
-        //started playback
-        onPlaybackStart();
-      );
-      
-      lastPlayState = play_state;
-    );
+    last_play_state = play_state;
+  );
     
-    update();
-    (sSendPCOnInit != 2) ? sendPC = 1;
-    
+  update();
+  (s_send_pc_on_init != 2) ? send_pc = 1;
+  
   /*
-  Init order must be same as slider order!
+  init order must be same as slider order!
   */     
-  ProgramCC = initCC(-1);
-  sliderSpacing();
+  program_cc = init_cc(-1);
+  slider_spacing();
  
-  VCO1WaveCC = initCC(50);      
-  VCO1ShapeCC = initCC(36);
+  vco1_wave_cc = init_cc(50);      
+  vco1_shape_cc = init_cc(36);
   
-  sliderSpacing();
+  slider_spacing();
  
-  VCO2WaveCC = initCC(51);    
-  VCO2ShapeCC = initCC(37);
-  VCO2PitchCC = initCC(35);
-  VCO2OctaveCC = initCC(49);
+  vco2_wave_cc = init_cc(51);    
+  vco2_shape_cc = init_cc(37);
+  vco2_pitch_cc = init_cc(35);
+  vco2_octave_cc = init_cc(49);
   
-  sliderSpacing();
+  slider_spacing();
   
-  VCOModeCC = initCC(60);
+  vco_mode_cc = init_cc(60);
   
-  sliderSpacing();
+  slider_spacing();
   
-  VCO1LevelCC = initCC(39);
-  VCO2LevelCC = initCC(40);
+  vco1_level_cc = init_cc(39);
+  vco2_level_cc = init_cc(40);
   
-  sliderSpacing();
+  slider_spacing();
   
-  CutoffCC = initCC(43);
-  ResonanceCC = initCC(44);
+  cutoff_cc = init_cc(43);
+  resonance_cc = init_cc(44);
   
-  sliderSpacing();
+  slider_spacing();
   
-  LFOWaveCC = initCC(58);
-  LFOModeCC = initCC(59);  
-  LFORateCC = initCC(24);
-  LFOIntensityCC = initCC(26);  
-  LFOTargetCC = initCC(56);
+  lfo_wave_cc = init_cc(58);
+  lfo_mode_cc = init_cc(59);  
+  lfo_rate_cc = init_cc(24);
+  lfo_intensity_cc = init_cc(26);  
+  lfo_target_cc = init_cc(56);
   
-  sliderSpacing();
+  slider_spacing();
   
-  EGTypeCC = initCC(61);
-  EGAttackCC = initCC(16);  
-  EGDecayCC = initCC(17);
-  EGIntensityCC = initCC(25);  
-  EGTargetCC = initCC(62);  
+  eg_type_cc = init_cc(61);
+  eg_attack_cc = init_cc(16);  
+  eg_decay_cc = init_cc(17);
+  eg_intensity_cc = init_cc(25);  
+  eg_target_cc = init_cc(62);  
   
-  sliderSpacing();
-  DriveCC = initCC(28);  
-  logPrint("====================================================");   
-  //logPrint("monoctrl loaded.");   
-  logPrint("Set input to:");
-  logPrint("MIDI -> Monologue KBD/KNOB -> All channels");
-  logPrint("Set hardware MIDI output to:");
-  logPrint("Monologue SOUND (low precision)");
-  logPrint("Enable input monitoring and arm this track.");   
-  logPrint("====================================================");     
+  slider_spacing();
+  drive_cc = init_cc(28);  
   
-  sProgramOld = sProgram;
+  log_print("====================================================");   
+  log_print("Set input to:");
+  log_print("MIDI -> Monologue KBD/KNOB -> All channels");
+  log_print("Set hardware MIDI output to:");
+  log_print("Monologue SOUND (low precision)");
+  log_print("Enable input monitoring and arm this track.");   
+  log_print("====================================================");     
   
-  initSend = 1;
-  //sendPCToDevice();
+  s_program_old = s_program;
+  
+  init_send = 1;
+  //send_pc_to_device();
   
 
 @block
   update();      
   m = 1;
-  loop(CCCount - 1, 
-    ccSliderOld[m] = getSlider(m);
+  loop(cc_count - 1, 
+    cc_slider_old[m] = get_slider(m);
     m += 1;
   );
-  (initSend) ? (
-    requestProgram(sProgram - 1, 0, 1);
-    invalidateCCSliders();   
-    sendCCToDevice();
-    initSend = 0;
+  (init_send) ? (
+    request_program(s_program - 1, 0, 1);
+    invalidate_cc_sliders();   
+    send_cc_to_device();
+    init_send = 0;
   );
 
 @gfx 560, 110
-  function drawButton(x, y, str, id) (
-       gfx_x = x;
-       gfx_y = y;
-       gfx_measurestr(str, w, h);
-       gfx_set(.25, .25, .25);
-       gfx_set(.1, .1, .1);
-       x0 = gfx_x - w - 5;
-       y0 = gfx_y - h / 2 - 2;
-       w += 10;
-       h += 3;
-       
-       (!(mouse_cap & 1)) ? (
-         released = 1;
-       );       
-       
-       
-       //(!(mouse_cap & 1) && clicked) ? (
-        // clicked = 0;          
-       //); 
-       gfx_rect(x0, y0, w, h, 1); 
-       
-       gfx_gradrect(x0, y0, w, h, .5, .2, .7, 1, 0, 0, 0, 0, -.03, -.03, -.03, 0);
-       
-       gfx_mode = 1;
-       gfx_set(1., 0, 0, -1, 1);
-       gfx_rect(x0 + 1, y0 + 1, w  - 2, h - 2, 0); 
-       gfx_mode = 0;
-       gfx_set(.6, .4, .85);
-       gfx_rect(x0, y0, w, h, 0); 
-       gfx_mode = 0;
-       gfx_set(.9, .8, 1);
-       
-       (mouse_x >= x0 && mouse_y >= y0 && mouse_x <= x0 + w && mouse_y <= y0 + h) ? (
-         
-         gfx_mode = 1;
-         gfx_gradrect(x0, y0, w, h, .4, .1, .8, .75, 0, 0, 0, 0, -.03, -.03, -.03, 0);
-         gfx_mode = 0;
-         gfx_setcursor(32649);
-         gfx_set(1, 1, 1);
-         (mouse_cap & 1) ? (
-           gfx_y += 1;
-           gfx_mode = 1;
-           gfx_gradrect(x0, y0, w, h, .6, .1, .2, -.25, 0, 0, 0, 0, -.03, -.03, -.03, 0);
-           gfx_mode = 0;
-           (buttonClicked[id] == 0 && released) ? (
-             buttonClicked[id] = 1;      
-             released = 0;
-           );
-         );        
-       );
-       
-       gfx_drawstr(str, 42|256, gfx_x, gfx_y + 5);
-     );
-
+  function draw_button(x, y, str, id) (
+    gfx_x = x;
+    gfx_y = y;
+    gfx_measurestr(str, w, h);
+    gfx_set(.25, .25, .25);
+    gfx_set(.1, .1, .1);
+    x0 = gfx_x - w - 5;
+    y0 = gfx_y - h / 2 - 2;
+    w += 10;
+    h += 3;
+    
+    (!(mouse_cap & 1)) ? (
+      released = 1;
+    );       
+    
+    gfx_rect(x0, y0, w, h, 1); 
+    
+    gfx_gradrect(x0, y0, w, h, .5, .2, .7, 1, 0, 0, 0, 0, -.03, -.03, -.03, 0);
+    
+    gfx_mode = 1;
+    gfx_set(1., 0, 0, -1, 1);
+    gfx_rect(x0 + 1, y0 + 1, w  - 2, h - 2, 0); 
+    gfx_mode = 0;
+    gfx_set(.6, .4, .85);
+    gfx_rect(x0, y0, w, h, 0); 
+    gfx_mode = 0;
+    gfx_set(.9, .8, 1);
+    
+    (mouse_x >= x0 && mouse_y >= y0 && mouse_x <= x0 + w && mouse_y <= y0 + h) ? (      
+      gfx_mode = 1;
+      gfx_gradrect(x0, y0, w, h, .4, .1, .8, .75, 0, 0, 0, 0, -.03, -.03, -.03, 0);
+      gfx_mode = 0;
+      gfx_setcursor(32649);
+      gfx_set(1, 1, 1);
+      (mouse_cap & 1) ? (
+        gfx_y += 1;
+        gfx_mode = 1;
+        gfx_gradrect(x0, y0, w, h, .6, .1, .2, -.25, 0, 0, 0, 0, -.03, -.03, -.03, 0);
+        gfx_mode = 0;
+        (button_clicked[id] == 0 && released) ? (
+          button_clicked[id] = 1;      
+          released = 0;
+        );
+      );        
+    );
+    
+    gfx_drawstr(str, 42|256, gfx_x, gfx_y + 5);
+  );
 
   gfx_clear = 0;
   
-  (gfx_w_old != gfx_w || gfx_h_old != gfx_h) ? logRedraw = 1;
+  (gfx_w_old != gfx_w || gfx_h_old != gfx_h) ? log_redraw = 1;
   
   gfx_setimgdim(2, gfx_w, gfx_h);
-  gfx_getimgdim(1, backW, backH); 
-  repeats = ceil((gfx_h + 20) / backH);
+  gfx_getimgdim(1, backw, backh); 
+  repeats = ceil((gfx_h + 20) / backh);
   i = 0;
   gfx_x = 0;
   off = (time_precise() * 20) % 20;
   loop(repeats,   
-    gfx_y = floor(backH * i - off);
+    gfx_y = floor(backh * i - off);
     gfx_blit(1, 1, 0);
     i += 1;
   );
   
-  //gfx_setfont(1, "Courier New", 20);
-  //gfx_drawnumber(rand(100), 10);
-  //gfx_drawstr("Trigger:", 255);
-  //gfx_line(0,0,testval,10); 
-  
   scale = 1;
   gfx_setfont(1, "Courier New", 13);
-  //gfx_y = gfx_h - 2;
   
-  logMaxMessageCount = floor(gfx_h / 10) - 3;  
+  log_max_message_count = floor(gfx_h / 10) - 3;  
   
-  (logRedraw) ? (
+  (log_redraw) ? (
     gfx_x = 0;
     gfx_y = 0;
     gfx_texth = 10;
@@ -804,86 +756,86 @@ filename:1,background.png
     i = 0;
     gfx_y = gfx_h - 20;    
     
-    maxLen = (gfx_w - logHorizontalOffset - 20) / 6;    
-    lineBreaks = 0;        
+    max_len = (gfx_w - log_horizontal_offset - 20) / 6;    
+    line_breaks = 0;        
     
-    loop(logMaxMessageCount,
-      (lineBreaks < logMaxMessageCount) ? (         
+    loop(log_max_message_count,
+      (line_breaks < log_max_message_count) ? (         
         #line = "";
-        strcpy(#line, logLine[i]);
-        (logLineCounts[i] > 0) ? sprintf(#line, "%s (%d)", #line, logLineCounts[i]); 
+        strcpy(#line, log_line[i]);
+        (log_line_counts[i] > 0) ? sprintf(#line, "%s (%d)", #line, log_line_counts[i]); 
         
         gfx_set(1, 1, 1);
         (match("> ERROR:*", #line)) ? gfx_set(1, 0, 0);
         
         len = strlen(#line);      
         off = 0;
-        prematureBreak = 0;
-        lineOff = 0;
-        localLineBreaks = 0;
-        #brokenLine = "";
+        premature_break = 0;
+        line_off = 0;
+        local_line_breaks = 0;
+        #broken_line = "";
        
-        ///// Assemble broken up line
+        ///// assemble broken up line
         loop(len,
           (str_getchar(#line, off) != ' ') ? (
-            (!readWord) ? (
+            (!read_word) ? (
               j = 0;
               break = 0;
               while (!break && j <= len)(
-                ((lineOff + j) > maxLen) ? (                  
-                  prematureBreak = 1;       
+                ((line_off + j) > max_len) ? (                  
+                  premature_break = 1;       
                              
                   break = 1;              
                 );
                 (j > 15 || str_getchar(#line, off + j) == ' ') ? break = 1;
                 j += 1;              
               );
-              readWord = 1;
+              read_word = 1;
             );
           ) : (
-            readWord = 0;                        
+            read_word = 0;                        
           );
           
-          ((lineOff > maxLen || prematureBreak)) ? (
-            lineOff = 0;
-            localLineBreaks += 1;
-            prematureBreak = 0;
-            sprintf(#brokenLine, "%s\n", #brokenLine);
+          ((line_off > max_len || premature_break)) ? (
+            line_off = 0;
+            local_line_breaks += 1;
+            premature_break = 0;
+            sprintf(#broken_line, "%s\n", #broken_line);
           ); 
-          sprintf(#brokenLine, "%s%c", #brokenLine, str_getchar(#line, off));
+          sprintf(#broken_line, "%s%c", #broken_line, str_getchar(#line, off));
           off += 1;
-          lineOff += 1;
+          line_off += 1;
         );
         /////////////////        
-        messageVerticalOffset = localLineBreaks * 10;
+        message_vertical_offset = local_line_breaks * 10;
         
-        ///// Print
-        gfx_x = logHorizontalOffset;        
-        gfx_y -= messageVerticalOffset;
+        ///// print
+        gfx_x = log_horizontal_offset;        
+        gfx_y -= message_vertical_offset;
         
         off = 0;
-        loop(strlen(#brokenline), 
-          char = str_getchar(#brokenline, off);
+        loop(strlen(#broken_line), 
+          char = str_getchar(#broken_line, off);
           (char == '\n') ? (
-            gfx_x = logHorizontalOffset;
+            gfx_x = log_horizontal_offset;
             gfx_y += 10;
           ) : (
             gfx_drawchar(char);
           );
           off += 1;
         );
-        gfx_y -= messageVerticalOffset + 10;
+        gfx_y -= message_vertical_offset + 10;
         /////////////////   
         i += 1;
-        lineBreaks += 1;
+        line_breaks += 1;
       );
     );
     gfx_set(0.0, 0.0, 0.0);                    
-    gfx_rect(logHorizontalOffset, 0, gfx_w - logHorizontalOffset, 25);
-    gfx_gradrect(logHorizontalOffset, 25, gfx_w - logHorizontalOffset, 6, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, -.166);
+    gfx_rect(log_horizontal_offset, 0, gfx_w - log_horizontal_offset, 25);
+    gfx_gradrect(log_horizontal_offset, 25, gfx_w - log_horizontal_offset, 6, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, -.166);
     gfx_set(1.0, 1.0, 1.0);      
     gfx_dest = -1;
-    logRedraw = max(0, logRedraw - 1);
+    log_redraw = max(0, log_redraw - 1);
   );
   
   
@@ -917,14 +869,14 @@ filename:1,background.png
   
   gfx_setcursor(32512);
   gfx_a = 1.0;
-  xOffset = gfx_w - 10;
-  drawButton(xOffset, 13, "MUTATE", 0);
-  xOffset -= w + 5;
-  drawButton(xOffset, 13, "RANDOMISE", 1);
-  xOffset -= w + 5;
-  drawButton(xOffset, 13, "SEND", 2);
-  xOffset -= w + 5;
-  drawButton(xOffset, 13, "GET", 3);
+  x_offset = gfx_w - 10;
+  draw_button(x_offset, 13, "mutate", 0);
+  x_offset -= w + 5;
+  draw_button(x_offset, 13, "randomise", 1);
+  x_offset -= w + 5;
+  draw_button(x_offset, 13, "send", 2);
+  x_offset -= w + 5;
+  draw_button(x_offset, 13, "get", 3);
   
   gfx_rect(1, 1, gfx_w - 1, gfx_h - 1,0);
   
@@ -932,4 +884,3 @@ filename:1,background.png
   gfx_h_old = gfx_h;
 
 
-    
