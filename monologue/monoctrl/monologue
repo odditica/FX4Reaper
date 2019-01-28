@@ -229,7 +229,7 @@ filename:1,background.png
     send = 1000;
     send[0] = 0xf0;
     send[1] = 0x42;
-    send[2] = 0x30;
+    send[2] = 0x30 | (s_channel - 1);
     send[3] = 0x00;
     send[4] = 0x01;
     send[5] = 0x44;
@@ -251,223 +251,213 @@ filename:1,background.png
     while ((recvlen = midirecv_buf(offset, buf, maxlen)) > 0) (
       event_type = buf[0] >> 4;
       channel = buf[0] & 15;
-      (channel == s_channel - 1) ? (
-        recvlen <= 3 && event_type == 0xb ? (
-          val =  buf[2];
-          g = 1;
-          loop(cc_count - 1, 
-            buf[1] == cc[g] ? (
-              is_switch(g) ? (
-                g == vco2_octave_cc ? (
-                  get_slider(g) = floor((val) / 42) - 1;   
-                ) : (
-                  get_slider(g) = floor((val + 1) / 64);   
-                )
-              ) : (           
-                (is_centered_knob(g)) ? (   
-                  get_slider(g) = val - 64;                                                            
-                ) : (
-                  get_slider(g) = val;                                            
-                )
-              );
-              slider_automate(get_slider_automate(g));          
-            );
-            g += 1;
-          );  
+      
+      (recvlen >= 518 && event_type == 0xf) ? (                               
+        offset = 6;
+        block_slider_update = 0;        
+        program = -1;      
+        (buf[offset] == 0x4c) ? (
+          program = buf[offset + 1];
+          s_debug = program;
+          s_program = program + 1;
+          block_slider_update = program_request_param[buf[offset + 1]] >> 1;
+          offset += 4;
+        ) : (
+          offset += 2;
+        );     
+        
+        i = 0;
+
+        #temp = buf_sub_str(buf, offset, 4);
+        (strcmp(#temp,  "PROG") == 0 && !block_slider_update) ? (                      
+          program_request = 0;
+          program_request_timer = 0;
+          //sprintf(#temp,"%f",rand(5));
+          offset += 4;
           
-        ) : ( //program change
+          #temp = "";
           
-          recvlen <= 3 && event_type == 0xc ? (            
-           get_slider(program_cc) = buf[1] + 1;  
-           slider_automate(get_slider(program_cc));                   
-          ) : (  
-    
-            (recvlen >= 518 && event_type == 0xf) ? (     
-               
-              offset = 6;
-              block_slider_update = 0;        
-              program = -1;      
-              (buf[offset] == 0x4c) ? (
-                  program = buf[offset + 1];
-                  s_debug = program;
-                  s_program = program + 1;
-                  block_slider_update = program_request_param[buf[offset + 1]] >> 1;
-                  offset += 4;
-              ) : (
-                  offset += 2;
-              );     
-              
-              i = 0;
-    
-              #temp = buf_sub_str(buf, offset, 4);
-              (strcmp(#temp,  "PROG") == 0 && !block_slider_update) ? (      
-                program_request = 0;
-                program_request_timer = 0;
-                //sprintf(#temp,"%f",rand(5));
-                offset += 4;
-                
-                #temp = "";
-                
-                h = 0;
-                valid = 0;
-                loop(14,
-                    (buf[offset + h] != 0 && h != 11)? (
-                      sprintf(#temp, "%s%c", #temp, buf[offset + h]);
-                      valid += 1;
-                    ); 
-                    h += 1;
-                );                  
-           
-                ///// vco1 level
-                offset += 11;        
-                value = ((buf[offset] & 64) << 3);
-                value = value | ((buf[offset + 7] & 127) << 2);
-                value = value | (buf[offset + 22] & 3);
-                update_cc_param(vco1_level_cc, value >> 3);
-                
-                
-                /////vco2 shape
-                value = ((buf[offset] & 32) << 4);
-                value = value | ((buf[offset + 6] & 127) << 2);
-                value = value | ((buf[offset + 20] & 12) >> 2);
-                update_cc_param(vco2_shape_cc, value >> 3);  
-                
-                
-                ///// vco2 pitch
-                value = ((buf[offset] & 16) << 5);
-                value = value | ((buf[offset + 5] & 127) << 2);
-                value = value | (buf[offset + 20] & 3);  
-                update_cc_param(vco2_pitch_cc, value >> 3 - 64);      
-                
-                ///// vco1 shape
-                value = ((buf[offset] & 8) << 6);
-                value = value | ((buf[offset + 4] & 127) << 2);
-                value = value | ((buf[offset + 19] & 12) >> 2);        
-                update_cc_param(vco1_shape_cc, value >> 3);
-                
-                ///// lfo rate
-                offset += 8;        
-                value = (buf[offset] & 64) << 3;
-                value = value | ((buf[offset + 7] & 127) << 2);
-                value = value | ((buf[offset + 17] & 12) >> 2);    
-                update_cc_param(lfo_rate_cc, value >> 3);    
-                
-                ///// eg intensity
-                value = (buf[offset] & 32) << 4;
-                value = value | ((buf[offset + 6] & 127) << 2);
-                value = value | (buf[offset + 17] & 3);
-                update_cc_param(eg_intensity_cc, (value >> 3) - 64);
-                
-                
-                ///// eg decay
-                value = (buf[offset] & 16) << 5;
-                value = value | ((buf[offset + 5] & 127) << 2);
-                value = value | ((buf[offset + 15] & 48) >> 4);
-                update_cc_param(eg_decay_cc, value >> 3);
-                
-                
-                ///// eg attack
-                value = (buf[offset] & 8) << 6;
-                value = value | ((buf[offset + 4] & 127) << 2);
-                value = value | ((buf[offset + 15] & 12) >> 2);      
-                update_cc_param(eg_attack_cc, value >> 3);  
-                
-                ///// filter resonance
-                value = (buf[offset] & 4) << 7;
-                value = value | ((buf[offset + 3] & 127) << 2);
-                value = value | ((buf[offset + 8] & 32) >> 4);
-                value = value | ((buf[offset + 14] & 64) >> 6);    
-                update_cc_param(resonance_cc, value >> 3);   
-                
-                ///// filter cutoff
-                value = (buf[offset] & 2) << 8;
-                value = value | ((buf[offset + 2] & 127) << 2);
-                value = value | ((buf[offset + 14] & 48) >> 4);
-                update_cc_param(cutoff_cc, value >> 3);
-                
-                
-                ///// vco2 level
-                value = ((buf[offset] & 1) << 9);
-                value = value | ((buf[offset + 1] & 127) << 2);
-                value = value | (buf[offset + 14] & 12) >> 2;
-                update_cc_param(vco2_level_cc, value >> 3);
-                
-                
-                ///// eg target
-                offset += 8;        
-                value = (buf[offset] & 64) >> 5;
-                value = value | ((buf[offset + 7] & 64) >> 6);
-                update_cc_param(eg_target_cc, value);
-                
-                ///// vco2 wave
-                value = ((buf[offset] & 8) >> 2);
-                value = value | ((buf[offset + 4] & 64) >> 6);
-                update_cc_param(vco2_wave_cc, value);
-                
-                ///// vco1 wave
-                value = ((buf[offset] & 4) >> 1);
-                value = value | ((buf[offset + 3] & 64) >> 6);
-                update_cc_param(vco1_wave_cc, value);
-                
-                ///// drive
-                value = ((buf[offset] & 2) << 8);
-                value = value | ((buf[offset + 2] & 127) << 2);
-                value = value | ((buf[offset + 8] & 1) << 1);
-                value = value | ((buf[offset + 9] & 64) >> 6);
-                update_cc_param(drive_cc, value >> 3);
-                
-                ///// lfo intensity
-                value = (buf[offset] & 1) << 9;
-                value = value | ((buf[offset + 1] & 127) << 2);
-                value = value | ((buf[offset + 9] & 48) >> 4);
-                update_cc_param(lfo_intensity_cc, (value >> 3) - 64);
-                
-                ///// vco2 octave
-                offset += 4;
-                value = (buf[offset] & 48) >> 4;
-                update_cc_param(vco2_octave_cc, value - 1);
-                
-                ///// ring/sync
-                offset += 1;
-                value = (buf[offset] & 3);
-                update_cc_param(vco_mode_cc, value);
-                
-                ///// eg type
-                offset += 2;        
-                value = (buf[offset] & 3);     
-                update_cc_param(eg_type_cc, value );
-                
-                ///// lfo target    
-                offset += 3;        
-                value = (buf[offset] & 48) >> 4;
-                update_cc_param(lfo_target_cc, value);
-                
-                ///// lfo mode
-                value = (buf[offset] & 12) >> 2;
-                update_cc_param(lfo_mode_cc, value);
-                
-                ///// lfo wave
-                value = (buf[offset] & 3);
-                update_cc_param(lfo_wave_cc, value);
-                (program != -1) ? (
-                  (program_request_param[program] & 1) ? echo_program_request = 5;
-                  //program_request_param[program] = 0;
+          h = 0;
+          valid = 0;
+          loop(14,
+            (buf[offset + h] != 0 && h != 11)? (
+              sprintf(#temp, "%s%c", #temp, buf[offset + h]);
+              valid += 1;
+            ); 
+            h += 1;
+          );                  
+     
+          ///// vco1 level
+          offset += 11;        
+          value = ((buf[offset] & 64) << 3);
+          value = value | ((buf[offset + 7] & 127) << 2);
+          value = value | (buf[offset + 22] & 3);
+          update_cc_param(vco1_level_cc, value >> 3);
+                    
+          /////vco2 shape
+          value = ((buf[offset] & 32) << 4);
+          value = value | ((buf[offset + 6] & 127) << 2);
+          value = value | ((buf[offset + 20] & 12) >> 2);
+          update_cc_param(vco2_shape_cc, value >> 3);  
+                    
+          ///// vco2 pitch
+          value = ((buf[offset] & 16) << 5);
+          value = value | ((buf[offset + 5] & 127) << 2);
+          value = value | (buf[offset + 20] & 3);  
+          update_cc_param(vco2_pitch_cc, value >> 3 - 64);      
+          
+          ///// vco1 shape
+          value = ((buf[offset] & 8) << 6);
+          value = value | ((buf[offset + 4] & 127) << 2);
+          value = value | ((buf[offset + 19] & 12) >> 2);        
+          update_cc_param(vco1_shape_cc, value >> 3);
+          
+          ///// lfo rate
+          offset += 8;        
+          value = (buf[offset] & 64) << 3;
+          value = value | ((buf[offset + 7] & 127) << 2);
+          value = value | ((buf[offset + 17] & 12) >> 2);    
+          update_cc_param(lfo_rate_cc, value >> 3);    
+          
+          ///// eg intensity
+          value = (buf[offset] & 32) << 4;
+          value = value | ((buf[offset + 6] & 127) << 2);
+          value = value | (buf[offset + 17] & 3);
+          update_cc_param(eg_intensity_cc, (value >> 3) - 64);          
+          
+          ///// eg decay
+          value = (buf[offset] & 16) << 5;
+          value = value | ((buf[offset + 5] & 127) << 2);
+          value = value | ((buf[offset + 15] & 48) >> 4);
+          update_cc_param(eg_decay_cc, value >> 3);
+                    
+          ///// eg attack
+          value = (buf[offset] & 8) << 6;
+          value = value | ((buf[offset + 4] & 127) << 2);
+          value = value | ((buf[offset + 15] & 12) >> 2);      
+          update_cc_param(eg_attack_cc, value >> 3);  
+          
+          ///// filter resonance
+          value = (buf[offset] & 4) << 7;
+          value = value | ((buf[offset + 3] & 127) << 2);
+          value = value | ((buf[offset + 8] & 32) >> 4);
+          value = value | ((buf[offset + 14] & 64) >> 6);    
+          update_cc_param(resonance_cc, value >> 3);   
+          
+          ///// filter cutoff
+          value = (buf[offset] & 2) << 8;
+          value = value | ((buf[offset + 2] & 127) << 2);
+          value = value | ((buf[offset + 14] & 48) >> 4);
+          update_cc_param(cutoff_cc, value >> 3);          
+          
+          ///// vco2 level
+          value = ((buf[offset] & 1) << 9);
+          value = value | ((buf[offset + 1] & 127) << 2);
+          value = value | (buf[offset + 14] & 12) >> 2;
+          update_cc_param(vco2_level_cc, value >> 3);          
+          
+          ///// eg target
+          offset += 8;        
+          value = (buf[offset] & 64) >> 5;
+          value = value | ((buf[offset + 7] & 64) >> 6);
+          update_cc_param(eg_target_cc, value);
+          
+          ///// vco2 wave
+          value = ((buf[offset] & 8) >> 2);
+          value = value | ((buf[offset + 4] & 64) >> 6);
+          update_cc_param(vco2_wave_cc, value);
+          
+          ///// vco1 wave
+          value = ((buf[offset] & 4) >> 1);
+          value = value | ((buf[offset + 3] & 64) >> 6);
+          update_cc_param(vco1_wave_cc, value);
+          
+          ///// drive
+          value = ((buf[offset] & 2) << 8);
+          value = value | ((buf[offset + 2] & 127) << 2);
+          value = value | ((buf[offset + 8] & 1) << 1);
+          value = value | ((buf[offset + 9] & 64) >> 6);
+          update_cc_param(drive_cc, value >> 3);
+          
+          ///// lfo intensity
+          value = (buf[offset] & 1) << 9;
+          value = value | ((buf[offset + 1] & 127) << 2);
+          value = value | ((buf[offset + 9] & 48) >> 4);
+          update_cc_param(lfo_intensity_cc, (value >> 3) - 64);
+          
+          ///// vco2 octave
+          offset += 4;
+          value = (buf[offset] & 48) >> 4;
+          update_cc_param(vco2_octave_cc, value - 1);
+          
+          ///// ring/sync
+          offset += 1;
+          value = (buf[offset] & 3);
+          update_cc_param(vco_mode_cc, value);
+          
+          ///// eg type
+          offset += 2;        
+          value = (buf[offset] & 3);     
+          update_cc_param(eg_type_cc, value );
+          
+          ///// lfo target    
+          offset += 3;        
+          value = (buf[offset] & 48) >> 4;
+          update_cc_param(lfo_target_cc, value);
+          
+          ///// lfo mode
+          value = (buf[offset] & 12) >> 2;
+          update_cc_param(lfo_mode_cc, value);
+          
+          ///// lfo wave
+          value = (buf[offset] & 3);
+          update_cc_param(lfo_wave_cc, value);
+          (program != -1) ? (
+            (program_request_param[program] & 1) ? echo_program_request = 5;
+            //program_request_param[program] = 0;
+          );
+          (program == -1 || (program >= 0 && !program_request_param[program] & 1)) ? ( 
+            log_print(sprintf(#, "RECV: Program '%s'", #temp)); 
+          ); 
+        );      
+        invalidate_cc_sliders(); 
+        send_cc_to_device();  
+        block_slider_update = 0;    
+        i = 1;
+        loop(cc_count - 1, 
+          cc_slider_old[i] = get_slider(i);
+          i += 1;
+        );                 
+      ) : ( 
+        (channel == s_channel - 1) ? (
+          (event_type == 0xb) ? (
+            val =  buf[2];
+            g = 1;
+            loop(cc_count - 1, 
+              buf[1] == cc[g] ? (
+                is_switch(g) ? (
+                  g == vco2_octave_cc ? (
+                    get_slider(g) = floor((val) / 42) - 1;   
+                  ) : (
+                    get_slider(g) = floor((val + 1) / 64);   
+                  )
+                ) : (           
+                  (is_centered_knob(g)) ? (   
+                    get_slider(g) = val - 64;                                                            
+                  ) : (
+                    get_slider(g) = val;                                            
+                  )
                 );
-                (program == -1 || (program >= 0 && !program_request_param[program] & 1)) ? ( 
-                  log_print(sprintf(#, "RECV: Program '%s'", #temp)); 
-                ); 
-                //cc_slider_old[program_cc] = cc_slider[program_cc];              
-                //s_sysex = value;
-              );      
-              invalidate_cc_sliders(); 
-              send_cc_to_device();  
-              block_slider_update = 0;    
-              i = 1;
-              loop(cc_count - 1, 
-                cc_slider_old[i] = get_slider(i);
-                i += 1;
-              );                 
-            ) : (
+                slider_automate(get_slider_automate(g));          
+              );
+              g += 1;
+            );  
+            
+          ) : ( //program change
+            (event_type == 0xc) ? (            
+              get_slider(program_cc) = buf[1] + 1;  
+              slider_automate(get_slider(program_cc));                   
+            ) : (                 
               ((s_block_midi_passthrough == 0) || (s_block_midi_passthrough == 1 && play_state  == 1)) ? midisend_buf(offset,buf,recvlen);                
             );
           );
