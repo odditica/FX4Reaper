@@ -752,7 +752,15 @@ filename:1,background.png
 
   gfx_clear = 0;
   
-  (gfx_w_old != gfx_w || gfx_h_old != gfx_h) ? log_redraw = 1;
+  (mouse_y <= 25 && mouse_y >= 0) ? (
+    button_redraw = 5;
+  );
+  
+  (gfx_w_old != gfx_w || gfx_h_old != gfx_h) ? (
+    log_redraw = 2;
+    console_redraw = 5;
+  );
+  
   gfx_setimgdim(3, gfx_w, gfx_h);  
   gfx_setimgdim(2, gfx_w, gfx_h);
   gfx_getimgdim(1, backw, backh); 
@@ -774,11 +782,11 @@ filename:1,background.png
   (log_redraw) ? (
     gfx_x = 0;
     gfx_y = 0;
-    gfx_texth = 10;
-    gfx_dest = 2;
-    gfx_muladdrect(0, 0, gfx_w, gfx_h, 1, 1, 1, 0); 
+   
+    gfx_dest = 2;   
+    gfx_muladdrect(0, 0, gfx_w, gfx_h, 1, 1, 1, 0);     
     gfx_clear = 0;
-           
+   
     i = 0;
     gfx_y = gfx_h - 20;    
     
@@ -860,17 +868,15 @@ filename:1,background.png
     gfx_rect(log_horizontal_offset, 0, gfx_w - log_horizontal_offset, 25);
     gfx_gradrect(log_horizontal_offset, 25, gfx_w - log_horizontal_offset, 6, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, -.166);
     gfx_set(1.0, 1.0, 1.0);      
+    
     gfx_dest = -1;
-    log_redraw = max(0, log_redraw - 1);
+    
+    
   );
   
   gfx_set(1., 1., 1., 1.);
-  (mouse_y <= 25 && mouse_y >= 0) ? (
-    button_redraw = 5;
-  ) : (
-    button_redraw = max(0, button_redraw - 1);
-  );
-  (button_redraw > 0) ? (
+  
+  (button_redraw || log_redraw) ? (
     gfx_dest = 2;
     x_offset = gfx_w - 10;
     draw_button(x_offset, 13, "MUTATE", 0);
@@ -881,9 +887,10 @@ filename:1,background.png
     x_offset -= w + 5;
     draw_button(x_offset, 13, "GET", 3);
     gfx_dest = -1;
+    
   );
-  
-  
+  button_redraw = max(0, button_redraw - 1);
+  log_redraw = max(0, log_redraw - 1);
   
   gfx_x = 6;
   gfx_y = gfx_h - 2;
@@ -918,9 +925,10 @@ filename:1,background.png
   
   gfx_setcursor(32512);
  
-  
-  draw_event_indicator(log_horizontal_offset + 15, 12, MIDI_EVENT_IN); 
-  draw_event_indicator(log_horizontal_offset + 46, 12, MIDI_EVENT_OUT); 
+  (x_offset > log_horizontal_offset + 80) ? (
+    draw_event_indicator(log_horizontal_offset + 15, 12, MIDI_EVENT_IN); 
+    draw_event_indicator(log_horizontal_offset + 46, 12, MIDI_EVENT_OUT); 
+  );
   gfx_rect(1, 1, gfx_w - 1, gfx_h - 1,0);
   
   gfx_w_old = gfx_w;
