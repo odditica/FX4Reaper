@@ -81,6 +81,9 @@ filename:1,background.png
   log_max_message_count = 99;
   log_horizontal_offset = 200;
   
+  send_cc_timer = 0;
+  send_cc_delay = 0;
+  
   ccid = 0;
   slider_counter = 0;
   last_play_state = 0;
@@ -126,9 +129,10 @@ filename:1,background.png
   );
   
   function invalidate_cc_sliders()
-  (
+  ( 
+
     c = 1;
-    loop(cc_count - 1, 
+    loop(cc_count - 2, 
       cc_slider_old[c] = -1;
       c += 1;
     ); 
@@ -206,7 +210,7 @@ filename:1,background.png
   );
 
   function send_cc_to_device()
-  (                   
+  (               
     f = 1;
     loop(cc_count - 1,      
       is_switch(f) ? (
@@ -291,7 +295,6 @@ filename:1,background.png
             ); 
             h += 1;
           );                  
-     
           ///// vco1 level
           offset += 11;        
           value = ((buf[offset] & 64) << 3);
@@ -418,7 +421,7 @@ filename:1,background.png
           value = (buf[offset] & 3);
           update_cc_param(lfo_wave_cc, value);
           (program != -1) ? (
-            (program_request_param[program] & 1) ? echo_program_request = 5;
+            (program_request_param[program] & 1) ?  echo_program_request = 5;
             //program_request_param[program] = 0;
           );
           (program == -1 || (program >= 0 && !program_request_param[program] & 1)) ? ( 
@@ -426,8 +429,16 @@ filename:1,background.png
           ); 
           midi_event_indicator[MIDI_EVENT_IN] = 1;  
         );      
-        invalidate_cc_sliders(); 
-        send_cc_to_device();  
+        
+        /*
+          The synth won't accept CC for a while after
+          transmitting program data, so we wait a bit
+          before sending all the sliders back to it.
+          (precision consistency, non-updated sliders, etc...)  
+        */
+        send_cc_delay = 1;
+        send_cc_timer = srate * .1;
+
         block_slider_update = 0;    
         i = 1;
         loop(cc_count - 1, 
@@ -567,15 +578,15 @@ filename:1,background.png
     
     (echo_program_request > 0) ? (
       (echo_program_request == 1) ? (
-        request_program(s_program - 1, 1, 0);      
+        request_program(s_program - 1, !(program_request_param[s_program - 1] >> 1), 0);      
       );
       echo_program_request -= 1;
     );
       
     s_program_old = s_program;
     (program_request) ? (
-      program_request_timer += 1;
-      (program_request_timer > 60) ? (
+      program_request_timer += samplesblock;
+      (program_request_timer > srate) ? (
         log_print("ERROR: Program request failed! Check your synth settings and make sure MIDI input is enabled on all channels in order to receive SySex messages.");
         program_request_timer = 0;
         program_request = 0;
@@ -587,6 +598,18 @@ filename:1,background.png
       button_clicked[l] = 0;
       l += 1;
     );
+    
+    // Delayed CC sending
+    (send_cc_delay) ? (
+      (!send_cc_timer) ? (
+        invalidate_cc_sliders(); 
+        send_cc_to_device();  
+        send_cc_delay = 0;
+      );
+      send_cc_timer = max(0, send_cc_timer - samplesblock);
+    );   
+  
+     
      
     (play_state && !last_play_state) ? (
       //started playback
@@ -657,9 +680,7 @@ filename:1,background.png
   log_print("====================================================");     
   
   s_program_old = s_program;
-  
-  init_send = 1;
-  //send_pc_to_device();
+  request_program(s_program - 1, 0, 1);
   
 
 @block
@@ -668,12 +689,6 @@ filename:1,background.png
   loop(cc_count - 1, 
     cc_slider_old[m] = get_slider(m);
     m += 1;
-  );
-  (init_send) ? (
-    request_program(s_program - 1, 0, 1);
-    invalidate_cc_sliders();   
-    send_cc_to_device();
-    init_send = 0;
   );
 
 @gfx 560, 110
