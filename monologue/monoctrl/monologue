@@ -2,6 +2,29 @@ desc: monoctrl (Blokatt)
 //tags: korg monologue midi
 //author: Jan Vorisek
 
+/*
+============
+MonoCtrl 1.0
+============
+
+A control interface for the Korg Monologue synthesiser.
+
+Written by Jan Vorisek (Blokatt)
+(blokatt.net, jan@blokatt.net, @blokatt)
+
+Setup for this track:
+====================
+Input: MIDI - 
+  'Monologue KBD/KNOB' (All channels, needs to be set to receive SysEx messages)
+Routing -> Midi Hardware Output -
+  'Monologue SOUND', enable low latency mode in Options -> Preferences -> Devices -> MIDI outputs
+
+Arm recording and enable monitoring.
+====================
+
+Make sure Tx/Rx MIDI is enabled in the global settings of your Monologue!
+*/
+
 slider1:s_channel=1<1,16,1>MIDI Channel
 slider2:s_block_midi_passthrough=1<0,1,1{All events,CC/PC (all events during playback),CC and PC only}>MIDI Passthrough
 slider3:s_send_pc_on_init=1:0<0,2,1{On program change and playback start,On program change only,Never (local preset)}>Auto-request program from synth
@@ -41,12 +64,14 @@ slider35:s_drive=0<0,127,1>Drive
 filename:0,logo.png
 filename:1,background.png
 
+/////////////////////////////////////////////////////////////////////////////////
+//////////////////// - A RATHER LARGE SECTION SEPARATOR. - //////////////////////
+/////////////////////////////////////////////////////////////////////////////////
 @init  
   function log_print(str) (
     //check overflow & shift
     #str = sprintf(#str, "> %s", str);
-    (strcmp(log_line[0], #str) != 0) ? (
-      log_current_message_count = min(log_current_message_count + 1, log_max_message_count);    
+    (strcmp(log_line[0], #str) != 0) ? ( 
       b = log_max_message_count - 1;
       loop(log_max_message_count - 1,
         strcpy(log_line[b], log_line[b - 1]);
@@ -177,7 +202,7 @@ filename:1,background.png
   cc_count = 23;
   cc = 0;
   
-  // memory offsets
+  // Mmemory offsets
   cc_slider = 100;
   cc_slider_old = 200;
   cc_slider_automateid = 300; 
@@ -191,7 +216,7 @@ filename:1,background.png
   MIDI_EVENT_IN = 1;  
   
   
-  //testing for successful program request
+  // Testing for successful program request
   program_request = 0; 
   program_request_timer = 0;
   //
@@ -290,7 +315,9 @@ filename:1,background.png
   update_program(s_program - 1, 0, 1);
   
 
-
+/////////////////////////////////////////////////////////////////////////////////
+//////////////////// - A RATHER LARGE SECTION SEPARATOR. - //////////////////////
+/////////////////////////////////////////////////////////////////////////////////
 @block  
   function buf_sub_str(bfr, a, b) (
     #str = "";
@@ -486,7 +513,6 @@ filename:1,background.png
         update_cc_param(lfo_wave_cc, value);
         (program != -1) ? (
           (program_request_param[program] & 1) ?  echo_program_request = 5;
-          //program_request_param[program] = 0;
         );
         (program == -1 || (program >= 0 && !program_request_param[program] & 1)) ? ( 
           log_print(sprintf(#, "RECV: Program %d: '%s'", s_program, #temp)); 
@@ -553,7 +579,8 @@ filename:1,background.png
   );    
   send_cc_to_device();  // Send slider changes
   /////////////////////////////////////////
-   
+  
+  // Buttons
   (button_clicked[3]) ? update_program(s_program -  1, 1, 1);
   (button_clicked[2]) ? (
     update_program(s_program - 1, 0, 1);
@@ -615,6 +642,19 @@ filename:1,background.png
     send_cc_to_device();
   );    
   
+  l = 0;
+  loop(10,  
+    button_clicked[l] = 0;
+    l += 1;
+  );
+  
+  /////
+  
+  
+  /*  
+  Hack to detect local preset change:
+  Don't auto-update program if any knobs have been moved during this block.  
+  */
   cc_changed = 0;
   k = 1;
   loop(cc_count - 1,
@@ -622,13 +662,8 @@ filename:1,background.png
     k += 1;
   );
               
-  l = 0;
-  loop(10,  
-    button_clicked[l] = 0;
-    l += 1;
-  );
-  
-  // Delayed CC sending
+    
+  // Delayed CC sending (synth might block incoming CC when loading a preset)
   (send_cc_delay) ? (
     (!send_cc_timer) ? (
       invalidate_cc_sliders(); 
@@ -638,11 +673,13 @@ filename:1,background.png
     send_cc_timer = max(0, send_cc_timer - samplesblock);
   );   
           
+  // Playback start detection
   (play_state && !last_play_state) ? (
-    //started playback
     on_playback_start();
   );
-            
+  last_play_state = play_state;
+  
+  // Repeat a program request (seems to be necessary when program number is >~64 for some reason)  
   (echo_program_request > 0) ? (
     (echo_program_request == 1) ? (
       update_program(s_program - 1, !(program_request_param[s_program - 1] >> 1), 0);      
@@ -650,11 +687,13 @@ filename:1,background.png
     echo_program_request -= 1;
   );
   
+  // Auto-send program request
   (s_program != s_program_old) ? (  
     update_program(s_program - 1, !cc_changed && (s_send_pc_on_init != 2), 1);                      
-  ); 
-    
+  );     
   s_program_old = s_program;
+  
+  // Error message timer
   (program_request) ? (
     program_request_timer += samplesblock;
     (program_request_timer > srate) ? (
@@ -663,16 +702,17 @@ filename:1,background.png
       program_request = 0;
     );
   );    
-      
   
-  last_play_state = play_state;
-  
+  // Old slider values    
   m = 1;
   loop(cc_count - 1, 
     cc_slider_old[m] = get_slider(m);
     m += 1;
   );
 
+/////////////////////////////////////////////////////////////////////////////////
+//////////////////// - A RATHER LARGE SECTION SEPARATOR. - //////////////////////
+/////////////////////////////////////////////////////////////////////////////////
 @gfx 560, 110
   function draw_button(x, y, str, id) (
     gfx_x = x;
@@ -718,45 +758,42 @@ filename:1,background.png
           released = 0;
         );
       );        
-    );
-    
+    );        
     gfx_drawstr(str, 42|256, gfx_x, gfx_y + 5);
   );
   
   function draw_event_indicator(x, y, id) ( 
-      gfx_set(.03, 0, .22);
-      gfx_circle(x, y, 3, 1, 1);
-      gfx_set(.15, .1, .6);
-      gfx_circle(x, y, 3, 0, 1);     
+    gfx_set(.03, 0, .22);
+    gfx_circle(x, y, 3, 1, 1);
+    gfx_set(.15, .1, .6);
+    gfx_circle(x, y, 3, 0, 1);     
+
+    gfx_mode = 1;
+    midi_event_indicator[id] = max(0, midi_event_indicator[id] - .2);
+    gfx_set(.88, .315, 1, midi_event_indicator[id]);      
+    gfx_circle(x, y, 1 + midi_event_indicator[id], 1, 1);
+    gfx_mode = 0;
  
-      gfx_mode = 1;
-      midi_event_indicator[id] = max(0, midi_event_indicator[id] - .2);
-      gfx_set(.88, .315, 1, midi_event_indicator[id]);      
-      gfx_circle(x, y, 1 + midi_event_indicator[id], 1, 1);
-      gfx_mode = 0;
+    gfx_set(.9, .8, 1);
+    gfx_circle(x, y, 4, 0, 1);    
+     
+    side = 1 - 2 * id;
+    gfx_set(.5, .4, 1, .5);
+    gfx_triangle(x - 15, y + 3 * side - side, x - 12, y - 3 * side + side, x - 9, y + 3 * side - side);
+    gfx_set(.5, .4, 1);
+    gfx_triangle(x - 15, y + 3 * side, x - 12, y - 3 * side, x - 9, y + 3 * side);
+    gfx_set(1, 1, 1, 1);
+    gfx_triangle(x - 14, y + 2 * side, x - 12, y - 2 * side, x - 10, y + 2 * side);
+  );
   
-      gfx_set(.9, .8, 1);
-      gfx_circle(x, y, 4, 0, 1);    
-      
-      side = 1 - 2 * id;
-      gfx_set(.5, .4, 1, .5);
-      gfx_triangle(x - 15, y + 3 * side - side, x - 12, y - 3 * side + side, x - 9, y + 3 * side - side);
-      gfx_set(.5, .4, 1);
-      gfx_triangle(x - 15, y + 3 * side, x - 12, y - 3 * side, x - 9, y + 3 * side);
-      gfx_set(1, 1, 1, 1);
-      gfx_triangle(x - 14, y + 2 * side, x - 12, y - 2 * side, x - 10, y + 2 * side);
-    );
-  
-  
+  gfx_setfont(1, "Courier New", 13);
   gfx_setcursor(CURSOR_NORMAL);
-  gfx_setimgdim(3, gfx_w, gfx_h);
-  gfx_setimgdim(2, gfx_w, gfx_h);
-  gfx_getimgdim(1, backw, backh); 
-  
-  
+  gfx_setimgdim(3, gfx_w, gfx_h); // screen copy
+  gfx_setimgdim(2, gfx_w, gfx_h); // log/buttons
+  gfx_getimgdim(1, backw, backh); // scrolling background
+    
   gfx_set(1, 1, 1, 1);
-  gfx_x = gfx_w;
-  gfx_y = gfx_h;
+  // Secret
   (global_state == GLOBAL_STATE_MAIN && fade_alpha < .01) ? (
     (mouse_x <= 35 && mouse_y >= gfx_h - 16) ? (      
       gfx_setcursor(CURSOR_HAND);
@@ -767,7 +804,6 @@ filename:1,background.png
         gfx_setcursor(CURSOR_NORMAL);
         gfx_dest = 3;   
         gfx_blit(-1, 1, 0);  
-
         gfx_dest = -1;  
         gfx_x = 0;
         gfx_y = 0;
@@ -776,9 +812,10 @@ filename:1,background.png
       );
     );
   );
-
-  
+    
   (global_state == GLOBAL_STATE_MAIN) ? (
+  
+    // Render background
     repeats = ceil((gfx_h + 20) / backh);
     i = 0;
     gfx_x = 0;
@@ -791,23 +828,19 @@ filename:1,background.png
   
     gfx_clear = 0;
       
+    // Redraw checking
     (mouse_y <= 25 && mouse_y >= 0) ? (
       button_redraw = 5;
-    );
-    
-    (gfx_w_old != gfx_w || gfx_h_old != gfx_h) ? (
+    );    
+    (gfx_w_old != gfx_w || gfx_h_old != gfx_h) ? (      
       log_redraw = 2;
       console_redraw = 5;
     );
     
-    
-    
-    
+            
     scale = 1;
-    gfx_setfont(1, "Courier New", 13);
-    
-    log_max_message_count = floor(gfx_h / 10) - 3;  
-    
+            
+    // Message log rendering
     (log_redraw) ? (
       gfx_x = 0;
       gfx_y = 0;
@@ -821,9 +854,9 @@ filename:1,background.png
       
       max_len = (gfx_w - log_horizontal_offset - 20) / 6;    
       line_breaks = 0;        
-      
-      loop(log_max_message_count,
-        (line_breaks < log_max_message_count) ? (         
+      log_screen_max_message_count = min(log_max_message_count, floor(gfx_h / 10) - 3);  
+      loop(log_screen_max_message_count,
+        (line_breaks < log_screen_max_message_count) ? (         
           #line = "";
           strcpy(#line, log_line[i]);
           (log_line_counts[i] > 0) ? sprintf(#line, "%s (%d)", #line, log_line_counts[i]); 
@@ -839,19 +872,21 @@ filename:1,background.png
           local_line_breaks = 0;
           #broken_line = "";
          
-          ///// assemble broken up line
+          ///// Assemble broken up line, prevent mid-word breaks if possible
           loop(len,
+          
+            // Analyse the current word
             (str_getchar(#line, off) != ' ') ? (
               (!read_word) ? (
                 j = 0;
-                break = 0;
-                while (!break && j <= len)(
+                stop_reading = 0;
+                while (!stop_reading && j <= len)(
                   ((line_off + j) > max_len) ? (                  
-                    premature_break = 1;       
-                               
-                    break = 1;              
+                    premature_break = 1;                                      
+                    stop_reading = 1;              
                   );
-                  (j > 15 || str_getchar(#line, off + j) == ' ') ? break = 1;
+                  //
+                  (j > 15 || str_getchar(#line, off + j) == ' ') ? stop_reading = 1;
                   j += 1;              
                 );
                 read_word = 1;
@@ -860,12 +895,14 @@ filename:1,background.png
               read_word = 0;                        
             );
             
-            ((line_off > max_len || premature_break)) ? (
+            // Place a line break
+            ((line_off > max_len || premature_break)) ? (              
               line_off = 0;
               local_line_breaks += 1;
               premature_break = 0;
               sprintf(#broken_line, "%s\n", #broken_line);
             ); 
+                        
             sprintf(#broken_line, "%s%c", #broken_line, str_getchar(#line, off));
             off += 1;
             line_off += 1;
@@ -873,7 +910,7 @@ filename:1,background.png
           /////////////////        
           message_vertical_offset = local_line_breaks * 10;
           
-          ///// print
+          ///// Print char by char
           gfx_x = log_horizontal_offset;        
           gfx_y -= message_vertical_offset;
           
@@ -930,12 +967,11 @@ filename:1,background.png
       gfx_set(1.0, 1.0, 1.0);      
       
       gfx_dest = -1;
-      
-      
     );
     
     gfx_set(1., 1., 1., 1.);
 
+    // Buttons
     (button_redraw || log_redraw) ? (
       gfx_dest = 2;
       x_offset = gfx_w - 10;
@@ -946,34 +982,38 @@ filename:1,background.png
       draw_button(x_offset, 13, "SEND", 2);
       x_offset -= w + 5;
       draw_button(x_offset, 13, "GET", 3);
-      gfx_dest = -1;
-      
+      gfx_dest = -1;      
     );
+    
+    // Decrese redraw checkers
     button_redraw = max(0, button_redraw - 1);
     log_redraw = max(0, log_redraw - 1);
     
+    // Version number
     gfx_x = 6;
-    gfx_y = gfx_h - 2;
-    //gfx_drawnumber(rand(100), 10);
-    
+    gfx_y = gfx_h - 2;    
     gfx_drawstr("v1.0", 8|256, gfx_x, gfx_y);
           
- 
+    // Draw log & buttons
     gfx_x = 0;
-    gfx_y = 0;
-    gfx_set(1, 1, 1, 1);
-    
+    gfx_y = 0;        
+    gfx_set(1, 1, 1, 1);    
     gfx_blit(2, 1, 0);  
     
-   
+    // MIDI indicators
     (x_offset > log_horizontal_offset + 80) ? (
       draw_event_indicator(log_horizontal_offset + 15, 12, MIDI_EVENT_IN); 
       draw_event_indicator(log_horizontal_offset + 46, 12, MIDI_EVENT_OUT); 
     );        
+    
     gfx_x = 0;
     gfx_y = 0;
+    
+    // (Orna)mental rectangle
+    gfx_rect(1, 1, gfx_w - 1, gfx_h - 1,0);
   );
   
+  // SPOILERS
   (global_state == GLOBAL_STATE_SECRET) ? (
     effect_time = time_precise();
     gfx_x = 0;
@@ -1019,6 +1059,8 @@ filename:1,background.png
       (mouse_cap & 1) ? (
         fade_alpha = 1;
         gfx_set(1, 1, 1, 1);
+        log_redraw = 1;
+        console_redraw = 1;
         global_state = GLOBAL_STATE_MAIN;        
       );
     );
@@ -1040,9 +1082,8 @@ filename:1,background.png
   //////
   gfx_x = 0;
   gfx_y = 0;
-  
-  (global_state == GLOBAL_STATE_MAIN) ? gfx_rect(1, 1, gfx_w - 1, gfx_h - 1,0);
-  
+ 
+  // Fade-in
   (fade_alpha > 0) ? (
     loop(floor(fade_alpha * 10), 
        gfx_dest = 3;   
@@ -1057,6 +1098,7 @@ filename:1,background.png
     gfx_muladdrect(0,  0, gfx_w, gfx_h, 1 + fade_alpha * 1.05, 1 + fade_alpha, 1 + fade_alpha * 1.5, 1, fade_alpha * 1.5, fade_alpha * 1.4, fade_alpha * 1.6);
   ); 
   
+  //Old canvas dimensions
   gfx_w_old = gfx_w;
   gfx_h_old = gfx_h;
 
