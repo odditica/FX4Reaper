@@ -3,26 +3,27 @@ desc: monoctrl (Blokatt)
 //author: Jan Vorisek
 
 /*
-============
-MonoCtrl 1.0
-============
-
-A control interface for the Korg Monologue synthesiser.
-
-Written by Jan Vorisek (Blokatt)
-(blokatt.net, jan@blokatt.net, @blokatt)
-
-Setup for this track:
-====================
-Input: MIDI - 
-  'Monologue KBD/KNOB' (All channels, needs to be set to receive SysEx messages)
-Routing -> Midi Hardware Output -
-  'Monologue SOUND', enable low latency mode in Options -> Preferences -> Devices -> MIDI outputs
-
-Arm recording and enable monitoring.
-====================
-
-Make sure Tx/Rx MIDI is enabled in the global settings of your Monologue!
+  .-============-.
+  | MonoCtrl 1.0 |
+  .-============-.
+  .______________.
+  
+  A control interface for the Korg Monologue synthesiser.
+  
+  Written by Jan Vorisek (Blokatt)
+  (blokatt.net, jan@blokatt.net, @blokatt)
+  
+  Setup for this track:
+  ====================
+  Input: MIDI - 
+    'Monologue KBD/KNOB' (All channels, needs to be set to receive SysEx messages)
+  Routing -> Midi Hardware Output -
+    'Monologue SOUND', enable low latency mode in Options -> Preferences -> Devices -> MIDI outputs
+  
+  Arm recording and enable monitoring.
+  ====================
+  
+  Make sure Tx/Rx MIDI is enabled in the global settings of your Monologue!
 */
 
 slider1:s_channel=1<1,16,1>MIDI Channel
@@ -68,96 +69,112 @@ filename:1,background.png
 //////////////////// - A RATHER LARGE SECTION SEPARATOR. - //////////////////////
 /////////////////////////////////////////////////////////////////////////////////
 @init  
+
+  // Print a log message
   function log_print(str) (
     //check overflow & shift
     #str = sprintf(#str, "> %s", str);
-    (strcmp(log_line[0], #str) != 0) ? ( 
-      b = log_max_message_count - 1;
-      loop(log_max_message_count - 1,
-        strcpy(log_line[b], log_line[b - 1]);
-        log_line_counts[b] = log_line_counts[b - 1];
+    (strcmp(mem_log_line[0], #str) != 0) ? ( 
+      b = LOG_MAX_MESSAGE_COUNT - 1;
+      loop(LOG_MAX_MESSAGE_COUNT - 1,
+        strcpy(mem_log_line[b], mem_log_line[b - 1]);
+        mem_log_line_counts[b] = mem_log_line_counts[b - 1];
         b -= 1;
       );   
-      strcpy(log_line[0], #str);
-      log_line_counts[0] = 0;            
+      strcpy(mem_log_line[0], #str);
+      mem_log_line_counts[0] = 0;            
     ) : (      
-      log_line_counts[0] += 1;
+      mem_log_line_counts[0] += 1;
     );     
     log_redraw = 2;
   );  
   
+  // Get new local CC identifier
   function assign_cc() (
     ccid += 1;
     ccid - 1;
   );
   
+  // Assign CC to slider
   function init_cc(id) (
     i = assign_cc();
     cc[i] = id;
-    cc_slider[i] = slider_counter + 5;
-    cc_slider_old[i] = slider_counter + 5;
-    cc_slider_automateid[i] = i + 4;
+    mem_cc_slider[i] = slider_counter + 5;
+    mem_cc_slider_old[i] = slider_counter + 5;
+    mem_cc_slider_automateid[i] = i + 4;
     slider_counter += 1;
     i;
   );
   
+  // Invalidate all slider states, not including PC
   function invalidate_cc_sliders() ( 
     c = 1;
-    loop(cc_count - 2, 
-      cc_slider_old[c] = -1;
+    loop(CC_COUNT - 2, 
+      mem_cc_slider_old[c] = -1;
       c += 1;
     ); 
   );
   
+  // Invalidate all slider states
   function invalidate_sliders() (
     d = 0;
-    loop(cc_count - 1, 
-      cc_slider_old[d] = -1;
+    loop(CC_COUNT - 1, 
+      mem_cc_slider_old[d] = -1;
       d += 1;
     ); 
   );
   
+  // Add a slider spacing ( slider_automate id bug hack)
   function slider_spacing() (
     slider_counter += 1;
   );
   
+  // Get slider ID
   function get_slider(id) (
-    slider(cc_slider[id]);
+    slider(mem_cc_slider[id]);
   );    
   
+  // Get slider automation ID (Reaper bug, automation IDs != slider IDs if spacings exist)
   function get_slider_automate(id) (
-    slider(cc_slider_automateid[id]);
+    slider(mem_cc_slider_automateid[id]);
   );
   
+  // Send CC/PC
   function send_cc(cc, val) (
     cc == -1 ? midisend(0, 0xc0 | (s_channel - 1), val) : midisend(0, 0xb0 | (s_channel - 1), cc, val);    
-    midi_event_indicator[MIDI_EVENT_OUT] = 1;
+    mem_midi_event_indicator[MIDI_EVENT_OUT] = 1;
   );
   
+  // Send CC if changed
   function send_updated_cc(ccid, val) (
-    get_slider(ccid) != cc_slider_old[ccid] ? send_cc(cc[ccid], val);
+    get_slider(ccid) != mem_cc_slider_old[ccid] ? send_cc(cc[ccid], val);
   );
   
+  // Update slider based on CC ID and value
   function update_cc_param(ccid, val) (        
     get_slider(ccid) = val;  
     slider_automate(get_slider_automate(ccid));        
   );
   
+  // Is CC switch?
   function is_switch(cc) (
     (cc == vco2_octave_cc || cc == vco1_wave_cc || cc == vco2_wave_cc || cc == vco_mode_cc ||cc ==  lfo_wave_cc || cc == lfo_mode_cc || cc == lfo_target_cc || cc == eg_type_cc || cc == eg_target_cc);
   ); 
   
+  // Is CC a centered knob?
   function is_centered_knob(cc) (
     (cc == vco2_pitch_cc || cc == lfo_intensity_cc || cc == eg_intensity_cc);
   ); 
   
+  // Send PC to device (if changed)
   function send_pc_to_device() (
     send_updated_cc(program_cc, s_program - 1); 
   );  
 
+  // Send CC to device (if changed, not including PC)
   function send_cc_to_device() (               
     f = 1;
-    loop(cc_count - 1,      
+    loop(CC_COUNT - 1,      
       is_switch(f) ? (
         f == vco2_octave_cc ? (
           send_updated_cc(f, min((get_slider(f) + 1) * 42, 127));   
@@ -174,7 +191,8 @@ filename:1,background.png
       f += 1;
     );
   );
-        
+  
+  // Send PC and send a program dump request, optionally update sliders when answer is received, optionally send request again when answer is received (seems to be sometimes necessary)
   function update_program(id, update_sliders, send_twice) (  
     send_pc_to_device();
     send = 1000;
@@ -189,29 +207,31 @@ filename:1,background.png
     send[8] = 0x00;
     send[9] = 0xf7;     
     midisend_buf(0,send,10);               
-    program_request_param[id] = (!update_sliders << 1) | send_twice;
+    mem_program_request_param[id] = (!update_sliders << 1) | send_twice;
     block_slider_update = !update_sliders;
     program_request = update_sliders;
-    midi_event_indicator[MIDI_EVENT_OUT] = 1;
+    mem_midi_event_indicator[MIDI_EVENT_OUT] = 1;
   );
         
   ext_noinit = 1.0;
   backw = 0;
   backh = 0;
 
-  cc_count = 23;
+  CC_COUNT = 23;
   cc = 0;
   
-  // Mmemory offsets
-  cc_slider = 100;
-  cc_slider_old = 200;
-  cc_slider_automateid = 300; 
-  log_line = 400;
-  log_line_counts = 500;
-  button_clicked = 600;
-  program_request_param = 700;
-  midi_event_indicator = 900;
-  //
+  // Memory offsets
+  mem_cc_slider = 100;              // Slider values
+  mem_cc_slider_old = 200;          // Old slider values
+  mem_cc_slider_automateid = 300;   // Slider automation IDs 
+  mem_log_line = 400;               // Log string pointers
+  mem_log_line_counts = 500;        // Log same string counters
+  mem_button_clicked = 600;         // Button clicked status 
+  mem_program_request_param = 700;  // Program request parameters (two rightmost bits)
+  mem_midi_event_indicator = 900;   // MIDI I/O indicators
+  mem_log_line_str = 1000;               // Log strings
+  //////////////////
+  
   MIDI_EVENT_OUT = 0;  
   MIDI_EVENT_IN = 1;  
   
@@ -221,23 +241,23 @@ filename:1,background.png
   program_request_timer = 0;
   //
   button_redraw = 5;
-   
-  //100 messages
-  
+
+
+  // Init log line memory offsets 
   a = 0; 
-  loop(99,
-    log_line[a] = 200 + a;
+  loop(LOG_MAX_MESSAGE_COUNT,
+    mem_log_line[a] = mem_log_line_str + a;
     a += 1;
   );
   //
+  
   log_redraw = 1;
-  log_max_message_count = 99;
-  log_horizontal_offset = 200;
+  LOG_MAX_MESSAGE_COUNT = 99;
+  LOG_HORIZONTAL_OFFSET = 200;
   
   send_cc_timer = 0;
   send_cc_delay = 0;
   
-  ccid = 0;
   slider_counter = 0;
   last_play_state = 0;
 
@@ -254,9 +274,16 @@ filename:1,background.png
   CURSOR_NORMAL = 32512;
   CURSOR_HAND = 32649;
   
+  BUTTON_RANDOMISE = 0;
+  BUTTON_MUTATE = 1;
+  BUTTON_SEND = 2;
+  BUTTON_GET = 3;
+  
   /*
-  init order must be same as slider order!
+  Init order must be same as slider order!
   */     
+  ccid = 0;
+  
   program_cc = init_cc(-1);
   slider_spacing();
  
@@ -347,6 +374,7 @@ filename:1,background.png
     event_type = buf[0] >> 4;
     channel = buf[0] & 15;
     
+    //Program Dump
     (recvlen >= 518 && event_type == 0xf && (buf[2] & 15) == s_channel - 1) ? (                               
       offset = 6;
       block_slider_update = 0;        
@@ -354,7 +382,7 @@ filename:1,background.png
       (buf[offset] == 0x4c) ? (
         program = buf[offset + 1];
         s_program = program + 1;
-        block_slider_update = program_request_param[buf[offset + 1]] >> 1;
+        block_slider_update = mem_program_request_param[buf[offset + 1]] >> 1;
         offset += 4;
       ) : (
         offset += 2;
@@ -512,12 +540,12 @@ filename:1,background.png
         value = (buf[offset] & 3);
         update_cc_param(lfo_wave_cc, value);
         (program != -1) ? (
-          (program_request_param[program] & 1) ?  echo_program_request = 5;
+          (mem_program_request_param[program] & 1) ?  echo_program_request = 5;
         );
-        (program == -1 || (program >= 0 && !program_request_param[program] & 1)) ? ( 
+        (program == -1 || (program >= 0 && !mem_program_request_param[program] & 1)) ? ( 
           log_print(sprintf(#, "RECV: Program %d: '%s'", s_program, #temp)); 
         ); 
-        midi_event_indicator[MIDI_EVENT_IN] = 1;  
+        mem_midi_event_indicator[MIDI_EVENT_IN] = 1;  
       );      
       
       /*
@@ -531,62 +559,58 @@ filename:1,background.png
   
       block_slider_update = 0;    
       i = 1;
-      loop(cc_count - 1, 
-        cc_slider_old[i] = get_slider(i);
+      loop(CC_COUNT - 1, 
+        mem_cc_slider_old[i] = get_slider(i);
         i += 1;
       );                 
-    ) : ( 
-      (channel == s_channel - 1) ? (
-        (event_type == 0xb) ? (
-          val =  buf[2];
-          g = 1;
-          loop(cc_count - 1, 
-            buf[1] == cc[g] ? (
-              is_switch(g) ? (
-                g == vco2_octave_cc ? (
-                  get_slider(g) = floor((val) / 42) - 1;   
-                ) : (
-                  get_slider(g) = floor((val + 1) / 64);   
-                )
-              ) : (           
-                (is_centered_knob(g)) ? (   
-                  get_slider(g) = val - 64;                                                            
-                ) : (
-                  get_slider(g) = val;                                            
-                )
-              );
-              slider_automate(get_slider_automate(g));        
-              midi_event_indicator[MIDI_EVENT_IN] = 1;  
+    ) : ( //CC
+    (channel == s_channel - 1) ? (
+      (event_type == 0xb) ? (
+        val =  buf[2];
+        g = 1;
+        loop(CC_COUNT - 1, 
+          buf[1] == cc[g] ? (
+            is_switch(g) ? (
+              g == vco2_octave_cc ? (
+                get_slider(g) = floor((val) / 42) - 1;   
+              ) : (
+                get_slider(g) = floor((val + 1) / 64);   
+              )
+            ) : (           
+              (is_centered_knob(g)) ? (   
+                get_slider(g) = val - 64;                                                            
+              ) : (
+                get_slider(g) = val;                                            
+              )
             );
-            g += 1;
-          );  
-          
-        ) : ( //program change
-          (event_type == 0xc) ? (            
-            get_slider(program_cc) = buf[1] + 1;  
-            slider_automate(get_slider(program_cc));                   
-            midi_event_indicator[MIDI_EVENT_IN] = 1;
-          ) : (                 
-            (buf[0] != 0xF8 && (s_block_midi_passthrough == 0) || (s_block_midi_passthrough == 1 && play_state  == 1)) ? (
-              midisend_buf(offset,buf,recvlen);               
-              midi_event_indicator[MIDI_EVENT_IN] = 1;
-              midi_event_indicator[MIDI_EVENT_OUT] = 1;
-            );
+            slider_automate(get_slider_automate(g));        
+            mem_midi_event_indicator[MIDI_EVENT_IN] = 1;  
           );
-        );
+          g += 1;
       );            
+    ) : ( // Program change
+    (event_type == 0xc) ? (            
+      get_slider(program_cc) = buf[1] + 1;  
+      slider_automate(get_slider(program_cc));                   
+      mem_midi_event_indicator[MIDI_EVENT_IN] = 1;
+    ) : ( // Passthrough, clock is blocked by default                 
+    (buf[0] != 0xF8 && (s_block_midi_passthrough == 0) || (s_block_midi_passthrough == 1 && play_state  == 1)) ? (
+      midisend_buf(offset,buf,recvlen);               
+      mem_midi_event_indicator[MIDI_EVENT_IN] = 1;
+      mem_midi_event_indicator[MIDI_EVENT_OUT] = 1;
+    );
+    );
+    );
+    );            
     ); 
   );    
   send_cc_to_device();  // Send slider changes
   /////////////////////////////////////////
   
   // Buttons
-  (button_clicked[3]) ? update_program(s_program -  1, 1, 1);
-  (button_clicked[2]) ? (
-    update_program(s_program - 1, 0, 1);
-  );  
-  
-  (button_clicked[0]) ? (
+  (mem_button_clicked[BUTTON_GET]) ? update_program(s_program -  1, 1, 1);
+  (mem_button_clicked[BUTTON_SEND]) ? update_program(s_program - 1, 0, 1);    
+  (mem_button_clicked[BUTTON_MUTATE]) ? (
     update_cc_param(vco1_wave_cc, min(2, max(0, s_vco1_wave + rand_int(2) - 1)));
     update_cc_param(vco1_shape_cc, min(127, max(0, s_vco1_shape + rand_int(10) - 5)));          
     update_cc_param(vco2_wave_cc, min(2, max(0, s_vco2_wave + rand_int(2) - 1)));
@@ -612,9 +636,8 @@ filename:1,background.png
     log_print("Sliders mutated.");
     invalidate_cc_sliders();       
     send_cc_to_device();
-  );
-  
-  (button_clicked[1]) ? (
+  );  
+  (mem_button_clicked[BUTTON_RANDOMISE]) ? (
     update_cc_param(vco1_wave_cc, rand_int(2));
     update_cc_param(vco1_shape_cc, rand_int(0x7f));        
     update_cc_param(vco2_wave_cc, rand_int(2));
@@ -644,7 +667,7 @@ filename:1,background.png
   
   l = 0;
   loop(10,  
-    button_clicked[l] = 0;
+    mem_button_clicked[l] = 0;
     l += 1;
   );
   
@@ -657,8 +680,8 @@ filename:1,background.png
   */
   cc_changed = 0;
   k = 1;
-  loop(cc_count - 1,
-    (get_slider(k) != cc_slider_old[k]) ? cc_changed = 1;
+  loop(CC_COUNT - 1,
+    (get_slider(k) != mem_cc_slider_old[k]) ? cc_changed = 1;
     k += 1;
   );
               
@@ -682,7 +705,7 @@ filename:1,background.png
   // Repeat a program request (seems to be necessary when program number is >~64 for some reason)  
   (echo_program_request > 0) ? (
     (echo_program_request == 1) ? (
-      update_program(s_program - 1, !(program_request_param[s_program - 1] >> 1), 0);      
+      update_program(s_program - 1, !(mem_program_request_param[s_program - 1] >> 1), 0);      
     );
     echo_program_request -= 1;
   );
@@ -705,8 +728,8 @@ filename:1,background.png
   
   // Old slider values    
   m = 1;
-  loop(cc_count - 1, 
-    cc_slider_old[m] = get_slider(m);
+  loop(CC_COUNT - 1, 
+    mem_cc_slider_old[m] = get_slider(m);
     m += 1;
   );
 
@@ -753,8 +776,8 @@ filename:1,background.png
         gfx_mode = 1;
         gfx_gradrect(x0, y0, w, h, .6, .1, .2, -.25, 0, 0, 0, 0, -.03, -.03, -.03, 0);
         gfx_mode = 0;
-        (button_clicked[id] == 0 && released) ? (
-          button_clicked[id] = 1;      
+        (mem_button_clicked[id] == 0 && released) ? (
+          mem_button_clicked[id] = 1;      
           released = 0;
         );
       );        
@@ -769,9 +792,9 @@ filename:1,background.png
     gfx_circle(x, y, 3, 0, 1);     
 
     gfx_mode = 1;
-    midi_event_indicator[id] = max(0, midi_event_indicator[id] - .2);
-    gfx_set(.88, .315, 1, midi_event_indicator[id]);      
-    gfx_circle(x, y, 1 + midi_event_indicator[id], 1, 1);
+    mem_midi_event_indicator[id] = max(0, mem_midi_event_indicator[id] - .2);
+    gfx_set(.88, .315, 1, mem_midi_event_indicator[id]);      
+    gfx_circle(x, y, 1 + mem_midi_event_indicator[id], 1, 1);
     gfx_mode = 0;
  
     gfx_set(.9, .8, 1);
@@ -852,14 +875,14 @@ filename:1,background.png
       i = 0;
       gfx_y = gfx_h - 20;    
       
-      max_len = (gfx_w - log_horizontal_offset - 20) / 6;    
+      max_len = (gfx_w - LOG_HORIZONTAL_OFFSET - 20) / 6;    
       line_breaks = 0;        
-      log_screen_max_message_count = min(log_max_message_count, floor(gfx_h / 10) - 3);  
+      log_screen_max_message_count = min(LOG_MAX_MESSAGE_COUNT, floor(gfx_h / 10) - 3);  
       loop(log_screen_max_message_count,
         (line_breaks < log_screen_max_message_count) ? (         
           #line = "";
-          strcpy(#line, log_line[i]);
-          (log_line_counts[i] > 0) ? sprintf(#line, "%s (%d)", #line, log_line_counts[i]); 
+          strcpy(#line, mem_log_line[i]);
+          (mem_log_line_counts[i] > 0) ? sprintf(#line, "%s (%d)", #line, mem_log_line_counts[i]); 
           
           gfx_set(1, 1, 1);
           message_is_error = 0;
@@ -911,14 +934,14 @@ filename:1,background.png
           message_vertical_offset = local_line_breaks * 10;
           
           ///// Print char by char
-          gfx_x = log_horizontal_offset;        
+          gfx_x = LOG_HORIZONTAL_OFFSET;        
           gfx_y -= message_vertical_offset;
           
           off = 0;
           loop(strlen(#broken_line), 
             char = str_getchar(#broken_line, off);
             (char == '\n') ? (
-              gfx_x = log_horizontal_offset;
+              gfx_x = LOG_HORIZONTAL_OFFSET;
               gfx_y += 10;
             ) : (
               old_gfx_x = gfx_x;
@@ -962,8 +985,8 @@ filename:1,background.png
         );
       );
       gfx_set(0.0, 0.0, 0.0);                    
-      gfx_rect(log_horizontal_offset, 0, gfx_w - log_horizontal_offset, 25);
-      gfx_gradrect(log_horizontal_offset, 25, gfx_w - log_horizontal_offset, 6, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, -.166);
+      gfx_rect(LOG_HORIZONTAL_OFFSET, 0, gfx_w - LOG_HORIZONTAL_OFFSET, 25);
+      gfx_gradrect(LOG_HORIZONTAL_OFFSET, 25, gfx_w - LOG_HORIZONTAL_OFFSET, 6, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, -.166);
       gfx_set(1.0, 1.0, 1.0);      
       
       gfx_dest = -1;
@@ -975,13 +998,13 @@ filename:1,background.png
     (button_redraw || log_redraw) ? (
       gfx_dest = 2;
       x_offset = gfx_w - 10;
-      draw_button(x_offset, 13, "MUTATE", 0);
+      draw_button(x_offset, 13, "MUTATE", BUTTON_MUTATE);
       x_offset -= w + 5;
-      draw_button(x_offset, 13, "RANDOMISE", 1);
+      draw_button(x_offset, 13, "RANDOMISE", BUTTON_RANDOMISE);
       x_offset -= w + 5;
-      draw_button(x_offset, 13, "SEND", 2);
+      draw_button(x_offset, 13, "SEND", BUTTON_SEND);
       x_offset -= w + 5;
-      draw_button(x_offset, 13, "GET", 3);
+      draw_button(x_offset, 13, "GET", BUTTON_GET);
       gfx_dest = -1;      
     );
     
@@ -1001,9 +1024,9 @@ filename:1,background.png
     gfx_blit(2, 1, 0);  
     
     // MIDI indicators
-    (x_offset > log_horizontal_offset + 80) ? (
-      draw_event_indicator(log_horizontal_offset + 15, 12, MIDI_EVENT_IN); 
-      draw_event_indicator(log_horizontal_offset + 46, 12, MIDI_EVENT_OUT); 
+    (x_offset > LOG_HORIZONTAL_OFFSET + 80) ? (
+      draw_event_indicator(LOG_HORIZONTAL_OFFSET + 15, 12, MIDI_EVENT_IN); 
+      draw_event_indicator(LOG_HORIZONTAL_OFFSET + 46, 12, MIDI_EVENT_OUT); 
     );        
     
     gfx_x = 0;
