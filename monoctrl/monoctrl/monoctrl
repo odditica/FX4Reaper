@@ -8,10 +8,10 @@ desc: MonoCtrl (Blokatt)
   .-============-.
   .______________.
   
-  A control interface for the Korg Monologue synthesiser.
+  An interface for the Korg Monologue synthesiser.
   
-  Written by Jan Vorisek (Blokatt)
-  (blokatt.net, jan@blokatt.net, @blokatt)
+  Written by Blokatt (Jan Vorisek)
+  (http://www.blokatt.net/, jan@blokatt.net, @blokatt)
   
   Setup for this track:
   ====================
@@ -21,9 +21,21 @@ desc: MonoCtrl (Blokatt)
     'Monologue SOUND', enable low latency mode in Options -> Preferences -> Devices -> MIDI outputs
   
   Arm recording and enable monitoring.
+  Make sure Tx/Rx MIDI is enabled in the global settings of your Monologue!
   ====================
   
-  Make sure Tx/Rx MIDI is enabled in the global settings of your Monologue!
+  SysEx reverse-engineering made easier thanks to:
+    - MIDI-OX (http://www.midiox.com/)
+    - loopMIDI (https://www.tobias-erichsen.de/software/loopmidi.html)
+    - Mido - MIDI Objects for Python (https://mido.readthedocs.io/en/latest/)
+  
+  ... and a whole lot of custom tools, all available at:
+  https://github.com/Blokatt/FX4Reaper/tree/master/monoctrl      
+  
+  (one of the Python scripts contains a Monologue program dump documentation 
+  in the form of comments, will put together a proper write-up in the future)
+  
+  05/02/19  
 */
 
 slider1:s_channel=1<1,16,1>MIDI Channel
@@ -48,17 +60,17 @@ slider18:s_vco2_level=0<0,127,1>VCO2 Level
 slider20:s_filter_cutoff=127<0,127,1>Filter Cutoff
 slider21:s_filter_resonance=0<0,127,1>Filter Resonance
 //================================//
-slider23:s_lfo_wave=0<0,1,3{Square,Triangle,Sawtooth}>LFO Wave
-slider24:s_lfo_mode=0<0,1,3{One shot,Slow,Fast}>LFO Mode
-slider25:s_lfo_rate=0<0,127,1>LFO Rate
+slider23:s_lfo_wave=1<0,1,3{Square,Triangle,Sawtooth}>LFO Wave
+slider24:s_lfo_mode=1<0,1,3{One shot,Slow,Fast}>LFO Mode
+slider25:s_lfo_rate=64<0,127,1>LFO Rate
 slider26:s_lfo_intensity=0<-64,63,1>LFO Intensity
-slider27:s_lfo_target=0<0,1,3{Cutoff,Shape,Pitch}>LFO Target
+slider27:s_lfo_target=2<0,1,3{Cutoff,Shape,Pitch}>LFO Target
 //================================//
 slider29:s_eg_type=0<0,1,3{Gate,Attack/Gate/Decay,Attack/Decay}>EG Type
 slider30:s_eg_attack=0<0,127,1>EG Attack
-slider31:s_eg_decay=0<0,127,1>EG Decay
+slider31:s_eg_decay=64<0,127,1>EG Decay
 slider32:s_eg_intensity=0<-64,63,1>EG Intensity
-slider33:s_eg_target=0<0,1,3{Cutoff,Pitch 2,Pitch}>EG Target
+slider33:s_eg_target=2<0,1,3{Cutoff,Pitch 2,Pitch}>EG Target
 //================================//
 slider35:s_drive=0<0,127,1>Drive
 
@@ -337,7 +349,6 @@ filename:2,avatar.png
   
   slider_spacing();
   drive_cc = init_cc(28);  
-  
   log_print("====================================================");   
   log_print("Set input to:");
   log_print("MIDI -> Monologue KBD/KNOB -> All channels");
