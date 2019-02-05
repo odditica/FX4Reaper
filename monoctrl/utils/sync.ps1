@@ -1,4 +1,5 @@
-﻿cd monoctrl
+﻿cd ..
+cd monoctrl
 
 $found = "$(find . -type f)"
 

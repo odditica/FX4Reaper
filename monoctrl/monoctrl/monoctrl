@@ -1,4 +1,4 @@
-desc: monoctrl (Blokatt)
+desc: MonoCtrl (Blokatt)
 //tags: korg monologue midi
 //author: Jan Vorisek
 
@@ -64,12 +64,16 @@ slider35:s_drive=0<0,127,1>Drive
 
 filename:0,logo.png
 filename:1,background.png
-
+filename:2,avatar.png
 /////////////////////////////////////////////////////////////////////////////////
 //////////////////// - A RATHER LARGE SECTION SEPARATOR. - //////////////////////
 /////////////////////////////////////////////////////////////////////////////////
 @init  
-
+  IMAGE_LOGO = 0;
+  IMAGE_BACKGROUND = 1;
+  IMAGE_AVATAR = 2;
+  IMAGE_UPPER_UI = 3;
+  IMAGE_COPY = 4;
   // Print a log message
   function log_print(str) (
     //check overflow & shift
@@ -212,10 +216,12 @@ filename:1,background.png
     program_request = update_sliders;
     mem_midi_event_indicator[MIDI_EVENT_OUT] = 1;
   );
-        
+  
+  #VERSION = "1.0";
+  #CREDITS = sprintf(#CREDITS, "MonoCtrl v%s\n=============\nWritten by Jan Vorisek in 2019.\nThis took more work than it should have.\n\njan@blokatt.net | blokatt.net | @blokatt", #VERSION);
+  
+          
   ext_noinit = 1.0;
-  backw = 0;
-  backh = 0;
 
   CC_COUNT = 23;
   cc = 0;
@@ -229,11 +235,11 @@ filename:1,background.png
   mem_button_clicked = 600;         // Button clicked status 
   mem_program_request_param = 700;  // Program request parameters (two rightmost bits)
   mem_midi_event_indicator = 900;   // MIDI I/O indicators
-  mem_log_line_str = 1000;               // Log strings
+  mem_log_line_str = 1000;          // Log strings
   //////////////////
   
   MIDI_EVENT_OUT = 0;  
-  MIDI_EVENT_IN = 1;  
+  MIDI_EVENT_IN = 1;    
   
   
   // Testing for successful program request
@@ -242,7 +248,10 @@ filename:1,background.png
   //
   button_redraw = 5;
 
-
+  log_redraw = 1;
+  LOG_MAX_MESSAGE_COUNT = 99;
+  LOG_HORIZONTAL_OFFSET = 200;
+  
   // Init log line memory offsets 
   a = 0; 
   loop(LOG_MAX_MESSAGE_COUNT,
@@ -250,11 +259,7 @@ filename:1,background.png
     a += 1;
   );
   //
-  
-  log_redraw = 1;
-  LOG_MAX_MESSAGE_COUNT = 99;
-  LOG_HORIZONTAL_OFFSET = 200;
-  
+
   send_cc_timer = 0;
   send_cc_delay = 0;
   
@@ -278,6 +283,9 @@ filename:1,background.png
   BUTTON_MUTATE = 1;
   BUTTON_SEND = 2;
   BUTTON_GET = 3;
+  
+  BACKGROUND_PATTERN_HEIGHT = 280;
+  AVATAR_HEIGHT = 444;
   
   /*
   Init order must be same as slider order!
@@ -360,6 +368,7 @@ filename:1,background.png
     send_pc_to_device();
     invalidate_cc_sliders(); 
     send_cc_to_device();
+    log_print("Playing...");
     (s_send_pc_on_init == 0) ? update_program(s_program - 1, 1, 1);
   );
   
@@ -544,6 +553,8 @@ filename:1,background.png
         );
         (program == -1 || (program >= 0 && !mem_program_request_param[program] & 1)) ? ( 
           log_print(sprintf(#, "RECV: Program %d: '%s'", s_program, #temp)); 
+          #program_name = "";
+          strcpy(#program_name, #temp);
         ); 
         mem_midi_event_indicator[MIDI_EVENT_IN] = 1;  
       );      
@@ -737,6 +748,35 @@ filename:1,background.png
 //////////////////// - A RATHER LARGE SECTION SEPARATOR. - //////////////////////
 /////////////////////////////////////////////////////////////////////////////////
 @gfx 560, 110
+  function draw_string_outlined(str, flags, right, bottom) (
+    old_gfx_x = gfx_x;
+    old_gfx_y = gfx_y;
+    
+    // back
+    gfx_set(.48, .215, 1, 1);
+    gfx_x = old_gfx_x - 1;            
+    gfx_drawstr(str, flags, right, bottom);
+    gfx_x = old_gfx_x;
+    gfx_y = old_gfx_y + 1;
+    gfx_drawstr(char);
+    gfx_set(.58, .215, 1, .5);              
+    gfx_x = old_gfx_x + 1;            
+    gfx_y = old_gfx_y;
+    gfx_drawstr(str, flags, right, bottom);
+    gfx_x = old_gfx_x;
+    gfx_y = old_gfx_y - 1;                        
+    gfx_drawstr(str, flags, right, bottom);
+    gfx_x = old_gfx_x;
+    gfx_y = old_gfx_y;
+    
+    // front
+    gfx_mode = 1;
+    gfx_set(.9, .9, 1., .9);
+    gfx_drawstr(str, flags, right, bottom);
+    gfx_set(1, 1, 1, 1);
+    gfx_mode = 0;
+  );
+  
   function draw_button(x, y, str, id) (
     gfx_x = x;
     gfx_y = y;
@@ -754,7 +794,7 @@ filename:1,background.png
     
     gfx_rect(x0, y0, w, h, 1); 
     
-    gfx_gradrect(x0, y0, w, h, .6, .3, 1, 1, 0, 0, 0, 0, -.035, -.02, -.03, 0);
+    gfx_gradrect(x0, y0, w, h, .6, .3, 1, 1, 0, 0, 0, 0, -.027, -.02, -.03, 0);
     
     gfx_mode = 1;
     gfx_set(1., 0, 0, -1, 1);
@@ -763,7 +803,7 @@ filename:1,background.png
     gfx_set(.8, .7, 1);
     gfx_rect(x0, y0, w, h, 0); 
     gfx_mode = 0;
-    gfx_set(.8, .9, 1);
+    gfx_set(.9, 1., 1);
     
     (mouse_x >= x0 && mouse_y >= y0 && mouse_x <= x0 + w && mouse_y <= y0 + h) ? (      
       gfx_mode = 1;
@@ -811,9 +851,8 @@ filename:1,background.png
   
   gfx_setfont(1, "Courier New", 13);
   gfx_setcursor(CURSOR_NORMAL);
-  gfx_setimgdim(3, gfx_w, gfx_h); // screen copy
-  gfx_setimgdim(2, gfx_w, gfx_h); // log/buttons
-  gfx_getimgdim(1, backw, backh); // scrolling background
+  gfx_setimgdim(IMAGE_COPY, gfx_w, gfx_h); // screen copy
+  gfx_setimgdim(IMAGE_UPPER_UI, gfx_w, gfx_h); // log/buttons
     
   gfx_set(1, 1, 1, 1);
   // Secret
@@ -823,14 +862,14 @@ filename:1,background.png
       (mouse_cap & 1) ? (          
         global_state = GLOBAL_STATE_SECRET;
         credits_characters = 0;
+        credits_mouse_released = 0;
         fade_alpha = .25;
-        gfx_setcursor(CURSOR_NORMAL);
-        gfx_dest = 3;   
+        gfx_dest = IMAGE_COPY;   
         gfx_blit(-1, 1, 0);  
         gfx_dest = -1;  
         gfx_x = 0;
         gfx_y = 0;
-        gfx_blit(3, 1, 0);  
+        gfx_blit(IMAGE_COPY, 1, 0);  
         gfx_clear = -1; 
       );
     );
@@ -839,13 +878,13 @@ filename:1,background.png
   (global_state == GLOBAL_STATE_MAIN) ? (
   
     // Render background
-    repeats = ceil((gfx_h + 20) / backh);
+    repeats = ceil((gfx_h + 20) / BACKGROUND_PATTERN_HEIGHT);
     i = 0;
     gfx_x = 0;
     off = (time_precise() * 20) % 20;
     loop(repeats,   
-      gfx_y = floor(backh * i - off);
-      gfx_blit(1, 1, 0);
+      gfx_y = floor(BACKGROUND_PATTERN_HEIGHT * i - off);
+      gfx_blit(IMAGE_BACKGROUND, 1, 0);
       i += 1;
     );
   
@@ -868,9 +907,9 @@ filename:1,background.png
       gfx_x = 0;
       gfx_y = 0;
      
-      gfx_dest = 2;   
+      gfx_dest = IMAGE_UPPER_UI;   
       gfx_muladdrect(0, 0, gfx_w, gfx_h, 1, 1, 1, 0);     
-      gfx_clear = 0;
+      //gfx_clear = -1;
      
       i = 0;
       gfx_y = gfx_h - 20;    
@@ -982,12 +1021,17 @@ filename:1,background.png
           /////////////////   
           i += 1;
           line_breaks += 1;
-        );
+        );        
       );
       gfx_set(0.0, 0.0, 0.0);                    
       gfx_rect(LOG_HORIZONTAL_OFFSET, 0, gfx_w - LOG_HORIZONTAL_OFFSET, 25);
       gfx_gradrect(LOG_HORIZONTAL_OFFSET, 25, gfx_w - LOG_HORIZONTAL_OFFSET, 6, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, -.166);
-      gfx_set(1.0, 1.0, 1.0);      
+      gfx_set(1.0, 1.0, 1.0);     
+      
+      gfx_set(.1, 0., .25, 1., 0.);      
+      gfx_rect(LOG_HORIZONTAL_OFFSET, 8, gfx_w, 4);
+      gfx_rect(LOG_HORIZONTAL_OFFSET, 15, gfx_w, 2);
+      gfx_set(1., 1., 1., 1., 0.);           
       
       gfx_dest = -1;
     );
@@ -996,7 +1040,7 @@ filename:1,background.png
 
     // Buttons
     (button_redraw || log_redraw) ? (
-      gfx_dest = 2;
+      gfx_dest = IMAGE_UPPER_UI;
       x_offset = gfx_w - 10;
       draw_button(x_offset, 13, "MUTATE", BUTTON_MUTATE);
       x_offset -= w + 5;
@@ -1006,22 +1050,39 @@ filename:1,background.png
       x_offset -= w + 5;
       draw_button(x_offset, 13, "GET", BUTTON_GET);
       gfx_dest = -1;      
-    );
+    );        
     
     // Decrese redraw checkers
     button_redraw = max(0, button_redraw - 1);
     log_redraw = max(0, log_redraw - 1);
     
     // Version number
-    gfx_x = 6;
-    gfx_y = gfx_h - 2;    
-    gfx_drawstr("v1.0", 8|256, gfx_x, gfx_y);
+    gfx_x = 8;
+    gfx_y = gfx_h - 4;    
+    
+    draw_string_outlined(sprintf(#, "v%s", #VERSION), 8|256, gfx_x, gfx_y);
           
+    gfx_set(.1, 0., .25, 1., 1.);      
+    gfx_rect(0, 8, gfx_w, 4);
+    gfx_rect(0, 15, gfx_w, 2);
+    gfx_rect(8, 0, 4, gfx_h);
+    gfx_rect(15, 0, 2, gfx_h);
+    gfx_set(1., 1., 1., 1., 0.);         
+
     // Draw log & buttons
     gfx_x = 0;
     gfx_y = 0;        
     gfx_set(1, 1, 1, 1);    
-    gfx_blit(2, 1, 0);  
+    gfx_blit(IMAGE_UPPER_UI, 1, 0);  
+    
+    // Draw current program name
+    /*
+    (#program_name != "") ? ( 
+      gfx_x = 6;
+      gfx_y = 5;
+      gfx_drawstr(#program_name);
+    );
+    */
     
     // MIDI indicators
     (x_offset > LOG_HORIZONTAL_OFFSET + 80) ? (
@@ -1041,16 +1102,24 @@ filename:1,background.png
     effect_time = time_precise();
     gfx_x = 0;
     gfx_y = -1;
-    gfx_blit(-1, 1, sin(effect_time * .4) * .004); 
+    gfx_blit(-1, 1, sin(effect_time * .4) * .002); 
     loop(5, gfx_blurto(gfx_w, gfx_h));
     gfx_muladdrect(0, 0, gfx_w, gfx_h, .95 + cos(effect_time * .125) * .01, .8, .99 + sin(effect_time * .25) * .01);
     
-    gfx_set(.5, .7, .9, 1, 1);
+    credits_length = strlen(#CREDITS);
+    //
+    avatar_scale = gfx_h / AVATAR_HEIGHT * 1;
+    gfx_x = gfx_w - AVATAR_HEIGHT * avatar_scale;
+    gfx_y = gfx_h - gfx_h * (credits_characters / credits_length) * .9;
+    gfx_set(0., 0., 0., .1 + .3 * (1.0 - (credits_characters / credits_length)), 1.);    
+    gfx_blit(IMAGE_AVATAR, avatar_scale, sin(effect_time * 1) * .02, -1);
+    //
+    
+    gfx_set(.5, .7, .9, 1, 1);        
     gfx_x = gfx_w - 10;
     gfx_y = gfx_h * .25 + sin(effect_time * 2) * 3;
-    #credits = "MonoCtrl v1.0\n=============\nWritten by Jan Vorisek in 2019.\nThis took more work than it should have.\n\njan@blokatt.net | blokatt.net | @blokatt";
-    credits_characters = min(strlen(#credits), credits_characters + 1);
-    gfx_drawstr(strcpy_substr(#,#credits, 0, credits_characters), 2|256, gfx_x, gfx_y);
+    credits_characters = min(credits_length, credits_characters + 1);
+    draw_string_outlined(strcpy_substr(#,#CREDITS, 0, credits_characters), 2|256, gfx_x, gfx_y);
     gfx_set(1, 1, 1, 1);
     
     plasma_x = 0;
@@ -1077,29 +1146,30 @@ filename:1,background.png
       gfx_set(.8 + rand(.2), sin(effect_time + fire_x * .005) * .5 + .5, 1, rand(1));
       gfx_circle(fire_x, gfx_h - 2 + rand(5), rand(4), 1);    
     );
-    (fade_alpha < .01) ? (
-      gfx_setcursor(CURSOR_HAND);
-      (mouse_cap & 1) ? (
-        fade_alpha = 1;
-        gfx_set(1, 1, 1, 1);
-        log_redraw = 1;
-        console_redraw = 1;
-        global_state = GLOBAL_STATE_MAIN;        
-      );
+    gfx_setcursor(CURSOR_HAND);
+
+    (mouse_cap & 1 && credits_mouse_released) ? (
+      fade_alpha = 1;
+      gfx_set(1, 1, 1, 1);
+      log_redraw = 1;
+      console_redraw = 1;
+      global_state = GLOBAL_STATE_MAIN;        
     );
+
+    (!(mouse_cap & 1)) ? credits_mouse_released = 1;
   );
   
   // LOGO
   logo_y_offset = (sin(time_precise() * 5) * 7) * (4. * (.25 - fade_alpha) * (global_state == GLOBAL_STATE_SECRET));
-  logo_x_offset = cos(time_precise() * 5) * 2;
+  logo_x_offset = cos(time_precise() * 5) * 2 + 3;
   gfx_x = 165 / 2 - 70 +logo_x_offset; 
   gfx_y = gfx_h / 2 - 30 + logo_y_offset;      
-  (global_state == GLOBAL_STATE_MAIN) ? gfx_blit(0, scale, (rand(1) - .5) * .05);
+  (global_state == GLOBAL_STATE_MAIN) ? gfx_blit(IMAGE_LOGO, scale, (rand(1) - .5) * .05);
   gfx_mode = 1;
   gfx_a = rand(1) * .4 + (.1 * global_state == GLOBAL_STATE_SECRET);
   gfx_x = 165 / 2 - (70 * 1.1) + logo_x_offset; 
   gfx_y = (gfx_h / 2 - 30) * 0.95 + logo_y_offset;
-  gfx_blit(0, scale + 0.1, (rand(1) - .5) * .075);
+  gfx_blit(IMAGE_LOGO, scale + 0.1, (rand(1) - .5) * .075);
   gfx_a = 1;
   gfx_mode = 0;      
   //////
@@ -1109,13 +1179,13 @@ filename:1,background.png
   // Fade-in
   (fade_alpha > 0) ? (
     loop(floor(fade_alpha * 10), 
-       gfx_dest = 3;   
+       gfx_dest = IMAGE_COPY;   
        gfx_blit(-1, 1, 0);  
        gfx_blurto(gfx_w, gfx_h);
        gfx_dest = -1;  
        gfx_x = 0;
        gfx_y = 0;
-       gfx_blit(3, 1, 0); 
+       gfx_blit(IMAGE_COPY, 1, 0); 
      );  
     fade_alpha = max(0, fade_alpha - .1);
     gfx_muladdrect(0,  0, gfx_w, gfx_h, 1 + fade_alpha * 1.05, 1 + fade_alpha, 1 + fade_alpha * 1.5, 1, fade_alpha * 1.5, fade_alpha * 1.4, fade_alpha * 1.6);
