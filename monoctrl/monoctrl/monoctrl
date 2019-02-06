@@ -13,17 +13,19 @@ desc: MonoCtrl (Blokatt)
   Written by Blokatt (Jan Vorisek)
   (http://www.blokatt.net/, jan@blokatt.net, @blokatt)
   
+  LOW PRECISION
+  
   Setup for this track:
   ====================
   Input: MIDI - 
-    'Monologue KBD/KNOB' (All channels, needs to be set to receive SysEx messages)
+    'Monologue KBD/KNOB' (All channels! -> important for SysEx reasons)
   Routing -> Midi Hardware Output -
     'Monologue SOUND', enable low latency mode in Options -> Preferences -> Devices -> MIDI outputs
   
   Arm recording and enable monitoring.
   Make sure Tx/Rx MIDI is enabled in the global settings of your Monologue!
   ====================
-  
+        
   SysEx reverse-engineering made easier thanks to:
     - MIDI-OX (http://www.midiox.com/)
     - loopMIDI (https://www.tobias-erichsen.de/software/loopmidi.html)
@@ -211,22 +213,12 @@ filename:2,avatar.png
   // Send PC and send a program dump request, optionally update sliders when answer is received, optionally send request again when answer is received (seems to be sometimes necessary)
   function update_program(id, update_sliders, send_twice) (  
     send_pc_to_device();
-    send = 1000;
-    send[0] = 0xf0;
-    send[1] = 0x42;
-    send[2] = 0x30 | (s_channel - 1);
-    send[3] = 0x00;
-    send[4] = 0x01;
-    send[5] = 0x44;
-    send[6] = 0x1c;
-    send[7] = s_program - 1;
-    send[8] = 0x00;
-    send[9] = 0xf7;     
-    midisend_buf(0,send,10);               
-    mem_program_request_param[id] = (!update_sliders << 1) | send_twice;
-    block_slider_update = !update_sliders;
-    program_request = update_sliders;
-    mem_midi_event_indicator[MIDI_EVENT_OUT] = 1;
+    (update_sliders) ? (
+      midisend_str(0, "\xf0\x7E\x7F\x06\x01\xf7"); 
+      program_request_id = id;
+      program_request_update_sliders = update_sliders;
+      program_request_send_twice = send_twice;
+    );
   );
   
   #VERSION = "1.0";
@@ -249,10 +241,6 @@ filename:2,avatar.png
   mem_midi_event_indicator = 900;   // MIDI I/O indicators
   mem_log_line_str = 1000;          // Log strings
   //////////////////
-  
-  MIDI_EVENT_OUT = 0;  
-  MIDI_EVENT_IN = 1;    
-  
   
   // Testing for successful program request
   program_request = 0; 
@@ -298,6 +286,12 @@ filename:2,avatar.png
   
   BACKGROUND_PATTERN_HEIGHT = 280;
   AVATAR_HEIGHT = 444;
+  
+  MIDI_EVENT_OUT = 0;  
+  MIDI_EVENT_IN = 1;   
+  
+  program_change_delay = 0;
+  program_change_waiting = 0;
   
   /*
   Init order must be same as slider order!
@@ -392,8 +386,30 @@ filename:2,avatar.png
   maxlen = 65536;  
   while ((recvlen = midirecv_buf(offset, buf, maxlen)) > 0) (
     event_type = buf[0] >> 4;
-    channel = buf[0] & 15;
-    
+    channel = buf[0] & 15;        
+        
+    //Program request answer
+    (recvlen == 15 && event_type == 0xf) ? (    
+      id = program_request_id;
+      update_sliders = program_request_update_sliders;
+      send_twice = program_request_send_twice;
+      send = 1000;
+      send[0] = 0xf0;
+      send[1] = 0x42;
+      send[2] = 0x30 | (s_channel - 1);
+      send[3] = 0x00;
+      send[4] = 0x01;
+      send[5] = 0x44;
+      send[6] = 0x1c;
+      send[7] = s_program - 1;
+      send[8] = 0x00;
+      send[9] = 0xf7;     
+      midisend_buf(10,send,10);               
+      mem_program_request_param[id] = (!update_sliders << 1) | send_twice;
+      block_slider_update = !update_sliders;
+      program_request = update_sliders;
+      mem_midi_event_indicator[MIDI_EVENT_OUT] = 1;
+    ) : (
     //Program Dump
     (recvlen >= 518 && event_type == 0xf && (buf[2] & 15) == s_channel - 1) ? (                               
       offset = 6;
@@ -561,9 +577,16 @@ filename:2,avatar.png
         update_cc_param(lfo_wave_cc, value);
         (program != -1) ? (
           (mem_program_request_param[program] & 1) ?  echo_program_request = 5;
+          // this is how i fix timing issues
+          s_program = program + 1;
+          s_program_old = s_program;   
         );
         (program == -1 || (program >= 0 && !mem_program_request_param[program] & 1)) ? ( 
-          log_print(sprintf(#, "RECV: Program %d: '%s'", s_program, #temp)); 
+          (program != -1) ? (
+            log_print(sprintf(#, "RECV: Program %d: '%s'", s_program, #temp)); 
+          ) : (
+            log_print(sprintf(#, "RECV: Program: '%s'", #temp)); 
+          );
           #program_name = "";
           strcpy(#program_name, #temp);
         ); 
@@ -625,6 +648,7 @@ filename:2,avatar.png
     );
     );            
     ); 
+    );
   );    
   send_cc_to_device();  // Send slider changes
   /////////////////////////////////////////
@@ -734,8 +758,20 @@ filename:2,avatar.png
   
   // Auto-send program request
   (s_program != s_program_old) ? (  
-    update_program(s_program - 1, !cc_changed && (s_send_pc_on_init != 2), 1);                      
-  );     
+    program_change_delay = (srate * .1) * (s_send_pc_on_init != 2);
+    program_change_waiting = 1;    
+    program_change_params = !cc_changed && (s_send_pc_on_init != 2);
+  );  
+  (program_change_waiting) ? (
+    program_change_delay = max(0, program_change_delay - samplesblock);
+    (program_change_delay == 0) ? (
+      
+      update_program(s_program - 1, program_change_params, 1);                      
+      program_change_waiting = 0;
+    );
+  );
+  
+     
   s_program_old = s_program;
   
   // Error message timer
