@@ -82,12 +82,7 @@ filename:2,avatar.png
 /////////////////////////////////////////////////////////////////////////////////
 //////////////////// - A RATHER LARGE SECTION SEPARATOR. - //////////////////////
 /////////////////////////////////////////////////////////////////////////////////
-@init  
-  IMAGE_LOGO = 0;
-  IMAGE_BACKGROUND = 1;
-  IMAGE_AVATAR = 2;
-  IMAGE_UPPER_UI = 3;
-  IMAGE_COPY = 4;
+@init    
   // Print a log message
   function log_print(str) (
     //check overflow & shift
@@ -116,7 +111,7 @@ filename:2,avatar.png
   // Assign CC to slider
   function init_cc(id) (
     i = assign_cc();
-    cc[i] = id;
+    mem_cc[i] = id;
     mem_cc_slider[i] = slider_counter + 5;
     mem_cc_slider_old[i] = slider_counter + 5;
     mem_cc_slider_automateid[i] = i + 4;
@@ -127,7 +122,7 @@ filename:2,avatar.png
   // Invalidate all slider states, not including PC
   function invalidate_cc_sliders() ( 
     c = 1;
-    loop(CC_COUNT - 2, 
+    loop(CC_COUNT - 1, 
       mem_cc_slider_old[c] = -1;
       c += 1;
     ); 
@@ -158,14 +153,14 @@ filename:2,avatar.png
   );
   
   // Send CC/PC
-  function send_cc(cc, val) (
+  function send_cc(cc, val) (    
     cc == -1 ? midisend(0, 0xc0 | (s_channel - 1), val) : midisend(0, 0xb0 | (s_channel - 1), cc, val);    
     mem_midi_event_indicator[MIDI_EVENT_OUT] = 1;
   );
   
   // Send CC if changed
   function send_updated_cc(ccid, val) (
-    get_slider(ccid) != mem_cc_slider_old[ccid] ? send_cc(cc[ccid], val);
+    get_slider(ccid) != mem_cc_slider_old[ccid] ? send_cc(mem_cc[ccid], val);      
   );
   
   // Update slider based on CC ID and value
@@ -205,7 +200,7 @@ filename:2,avatar.png
         ) : (
           send_updated_cc(f, get_slider(f));                                            
         )
-      );        
+      );         
       f += 1;
     );
   );
@@ -218,7 +213,10 @@ filename:2,avatar.png
       program_request_id = id;
       program_request_update_sliders = update_sliders;
       program_request_send_twice = send_twice;
-    );
+    ) : ( 
+      send_cc_delay = 1;
+      send_cc_timer = srate * .1;
+    )   
   );
   
   #VERSION = "1.0";
@@ -240,7 +238,14 @@ filename:2,avatar.png
   mem_program_request_param = 700;  // Program request parameters (two rightmost bits)
   mem_midi_event_indicator = 900;   // MIDI I/O indicators
   mem_log_line_str = 1000;          // Log strings
+  mem_cc = 1100;
   //////////////////
+  
+  IMAGE_LOGO = 0;
+  IMAGE_BACKGROUND = 1;
+  IMAGE_AVATAR = 2;
+  IMAGE_UPPER_UI = 3;
+  IMAGE_COPY = 4;
   
   // Testing for successful program request
   program_request = 0; 
@@ -279,10 +284,14 @@ filename:2,avatar.png
   CURSOR_NORMAL = 32512;
   CURSOR_HAND = 32649;
   
+  
+  BUTTON_COUNT = 5;
+  
   BUTTON_RANDOMISE = 0;
   BUTTON_MUTATE = 1;
   BUTTON_SEND = 2;
   BUTTON_GET = 3;
+  BUTTON_PANIC = 4;
   
   BACKGROUND_PATTERN_HEIGHT = 280;
   AVATAR_HEIGHT = 444;
@@ -343,6 +352,7 @@ filename:2,avatar.png
   
   slider_spacing();
   drive_cc = init_cc(28);  
+  
   log_print("====================================================");   
   log_print("Set input to:");
   log_print("MIDI -> Monologue KBD/KNOB -> All channels");
@@ -350,6 +360,7 @@ filename:2,avatar.png
   log_print("Monologue SOUND (low precision)");
   log_print("Enable input monitoring and arm this track.");   
   log_print("====================================================");     
+  
     
   s_program_old = s_program;
   update_program(s_program - 1, 0, 1);
@@ -614,7 +625,7 @@ filename:2,avatar.png
         val =  buf[2];
         g = 1;
         loop(CC_COUNT - 1, 
-          buf[1] == cc[g] ? (
+          buf[1] == mem_cc[g] ? (
             is_switch(g) ? (
               g == vco2_octave_cc ? (
                 get_slider(g) = floor((val) / 42) - 1;   
@@ -631,7 +642,7 @@ filename:2,avatar.png
             slider_automate(get_slider_automate(g));        
             mem_midi_event_indicator[MIDI_EVENT_IN] = 1;  
           );
-          g += 1;
+        g += 1;
       );            
     ) : ( // Program change
     (event_type == 0xc) ? (            
@@ -710,9 +721,13 @@ filename:2,avatar.png
     invalidate_cc_sliders();       
     send_cc_to_device();
   );    
-  
+  (mem_button_clicked[BUTTON_PANIC]) ? (
+      send_cc(123, 0);
+      log_print("All notes off.");
+  ); 
+    
   l = 0;
-  loop(10,  
+  loop(BUTTON_COUNT,  
     mem_button_clicked[l] = 0;
     l += 1;
   );
@@ -770,8 +785,7 @@ filename:2,avatar.png
       program_change_waiting = 0;
     );
   );
-  
-     
+       
   s_program_old = s_program;
   
   // Error message timer
@@ -832,7 +846,8 @@ filename:2,avatar.png
     gfx_set(.1, .1, .1);
     x0 = gfx_x - w - 5;
     y0 = gfx_y - h / 2 - 2;
-    w += 10;
+
+    w += 11;
     h += 3;
     
     (!(mouse_cap & 1)) ? (
@@ -1089,6 +1104,8 @@ filename:2,avatar.png
     (button_redraw || log_redraw) ? (
       gfx_dest = IMAGE_UPPER_UI;
       x_offset = gfx_w - 10;
+      draw_button(x_offset, 13, "!", BUTTON_PANIC);
+      x_offset -= w + 5;
       draw_button(x_offset, 13, "MUTATE", BUTTON_MUTATE);
       x_offset -= w + 5;
       draw_button(x_offset, 13, "RANDOMISE", BUTTON_RANDOMISE);
