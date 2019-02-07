@@ -235,7 +235,7 @@ filename:2,avatar.png
   mem_log_line = 400;               // Log string pointers
   mem_log_line_counts = 500;        // Log same string counters
   mem_button_clicked = 600;         // Button clicked status 
-  mem_program_request_param = 700;  // Program request parameters (two rightmost bits)
+  mem_program_request_send_twice = 700;  // Program request parameters (two rightmost bits)
   mem_midi_event_indicator = 900;   // MIDI I/O indicators
   mem_log_line_str = 1000;          // Log strings
   mem_cc = 1100;
@@ -399,8 +399,10 @@ filename:2,avatar.png
     event_type = buf[0] >> 4;
     channel = buf[0] & 15;        
         
-    //Program request answer
-    (recvlen == 15 && event_type == 0xf) ? (    
+    //Program request answer 
+    (recvlen == 15 && event_type == 0xf && buf[1] == 0x7E && buf[2] == s_channel - 1 && buf[3] == 0x06 && buf[4] == 0x02 &&
+    buf[5] == 0x42 && buf[6] == 0x44 && buf[7] == 0x01 && buf[8] == 00 && buf[7] == 00
+    && buf[9] == 0x01 && buf[10] == 0x00 && buf[11] == 0x0E && buf[12] ==  0x00) ? (    
       id = program_request_id;
       update_sliders = program_request_update_sliders;
       send_twice = program_request_send_twice;
@@ -416,29 +418,25 @@ filename:2,avatar.png
       send[8] = 0x00;
       send[9] = 0xf7;     
       midisend_buf(10,send,10);               
-      mem_program_request_param[id] = (!update_sliders << 1) | send_twice;
-      block_slider_update = !update_sliders;
+      mem_program_request_send_twice[id] = send_twice;
       program_request = update_sliders;
       mem_midi_event_indicator[MIDI_EVENT_OUT] = 1;
     ) : (
     //Program Dump
     (recvlen >= 518 && event_type == 0xf && (buf[2] & 15) == s_channel - 1) ? (                               
-      offset = 6;
-      block_slider_update = 0;        
+      offset = 6;      
       program = -1;      
       (buf[offset] == 0x4c) ? (
         program = buf[offset + 1];
         s_program = program + 1;
-        block_slider_update = mem_program_request_param[buf[offset + 1]] >> 1;
         offset += 4;
       ) : (
         offset += 2;
       );     
       
       i = 0;
-  
       #temp = buf_sub_str(buf, offset, 4);
-      (strcmp(#temp,  "PROG") == 0 && !block_slider_update) ? (                      
+      (strcmp(#temp,  "PROG") == 0) ? (                      
         program_request = 0;
         program_request_timer = 0;
         //sprintf(#temp,"%f",rand(5));
@@ -587,12 +585,12 @@ filename:2,avatar.png
         value = (buf[offset] & 3);
         update_cc_param(lfo_wave_cc, value);
         (program != -1) ? (
-          (mem_program_request_param[program] & 1) ?  echo_program_request = 5;
+          (mem_program_request_send_twice[program] & 1) ?  echo_program_request = 5;
           // this is how i fix timing issues
           s_program = program + 1;
           s_program_old = s_program;   
         );
-        (program == -1 || (program >= 0 && !mem_program_request_param[program] & 1)) ? ( 
+        (program == -1 || (program >= 0 && !mem_program_request_send_twice[program] & 1)) ? ( 
           (program != -1) ? (
             log_print(sprintf(#, "RECV: Program %d: '%s'", s_program, #temp)); 
           ) : (
@@ -613,7 +611,7 @@ filename:2,avatar.png
       send_cc_delay = 1;
       send_cc_timer = srate * .1;
   
-      block_slider_update = 0;    
+ 
       i = 1;
       loop(CC_COUNT - 1, 
         mem_cc_slider_old[i] = get_slider(i);
@@ -766,7 +764,7 @@ filename:2,avatar.png
   // Repeat a program request (seems to be necessary when program number is >~64 for some reason)  
   (echo_program_request > 0) ? (
     (echo_program_request == 1) ? (
-      update_program(s_program - 1, !(mem_program_request_param[s_program - 1] >> 1), 0);      
+      update_program(s_program - 1, !(mem_program_request_send_twice[s_program - 1] >> 1), 0);      
     );
     echo_program_request -= 1;
   );
