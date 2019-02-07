@@ -12,32 +12,37 @@ desc: MonoCtrl (Blokatt)
   
   Written by Blokatt (Jan Vorisek)
   (http://www.blokatt.net/, jan@blokatt.net, @blokatt)
-  
-  LOW PRECISION
-  
+    
   Setup for this track:
   ====================
   Input: MIDI - 
     'Monologue KBD/KNOB' (All channels! -> important for SysEx reasons)
-  Routing -> Midi Hardware Output -
-    'Monologue SOUND', enable low latency mode in Options -> Preferences -> Devices -> MIDI outputs
+  Routing -> MIDI Hardware Output -
+    'Monologue SOUND', enable low latency mode in Options -> Preferences -> Devices -> MIDI outputs*
   
   Arm recording and enable monitoring.
   Make sure Tx/Rx MIDI is enabled in the global settings of your Monologue!
+  
+  *) Not doing this may result in timing issues.
   ====================
-        
+  
+  Note: Incoming MIDI clock messages are always blocked from being sent back to the synth,
+  no matter the passthrough mode chosen. This is done to avoid a feedback loop.
+            
   SysEx reverse-engineering made easier thanks to:
     - MIDI-OX (http://www.midiox.com/)
     - loopMIDI (https://www.tobias-erichsen.de/software/loopmidi.html)
     - Mido - MIDI Objects for Python (https://mido.readthedocs.io/en/latest/)
   
   ... and a whole lot of custom tools, all available at:
-  https://github.com/Blokatt/FX4Reaper/tree/master/monoctrl      
+  http://github.com/Blokatt/FX4Reaper/tree/master/monoctrl      
   
   (one of the Python scripts contains a Monologue program dump documentation 
   in the form of comments, will put together a proper write-up in the future)
   
-  05/02/19  
+  I'm glad this happy nightmare is over.
+  
+  07/02/19  
 */
 
 slider1:s_channel=1<1,16,1>MIDI Channel
@@ -83,6 +88,8 @@ filename:2,avatar.png
 //////////////////// - A RATHER LARGE SECTION SEPARATOR. - //////////////////////
 /////////////////////////////////////////////////////////////////////////////////
 @init    
+  #VERSION = "1.0";
+
   // Print a log message
   function log_print(str) (
     //check overflow & shift
@@ -107,6 +114,11 @@ filename:2,avatar.png
     ccid += 1;
     ccid - 1;
   );
+  
+  function delayed_cc_send() ( 
+    send_cc_delay = 1;
+    send_cc_timer = srate * .1;
+  );  
   
   // Assign CC to slider
   function init_cc(id) (
@@ -205,21 +217,21 @@ filename:2,avatar.png
     );
   );
   
-  // Send PC and send a program dump request, optionally update sliders when answer is received, optionally send request again when answer is received (seems to be sometimes necessary)
+  // Send PC and optionally a program dump request if sliders should be updated.
+  // If needed, send it again when answer is received (seems to be sometimes necessary)
   function update_program(id, update_sliders, send_twice) (  
     send_pc_to_device();
     (update_sliders) ? (
       midisend_str(0, "\xf0\x7E\x7F\x06\x01\xf7"); 
       program_request_id = id;
       program_request_update_sliders = update_sliders;
-      program_request_send_twice = send_twice;
+      program_request_send_twice = send_twice;      
     ) : ( 
-      send_cc_delay = 1;
-      send_cc_timer = srate * .1;
-    )   
+      delayed_cc_send();      
+    );
+    program_request = update_sliders;
   );
-  
-  #VERSION = "1.0";
+    
   #CREDITS = sprintf(#CREDITS, "MonoCtrl v%s\n=============\nWritten by Jan Vorisek in 2019.\nThis took more work than it should have.\n\njan@blokatt.net | blokatt.net | @blokatt", #VERSION);
   
           
@@ -352,15 +364,13 @@ filename:2,avatar.png
   
   slider_spacing();
   drive_cc = init_cc(28);  
-  
-  log_print("====================================================");   
+     
   log_print("Set input to:");
   log_print("MIDI -> Monologue KBD/KNOB -> All channels");
   log_print("Set hardware MIDI output to:");
   log_print("Monologue SOUND (low precision)");
   log_print("Enable input monitoring and arm this track.");   
-  log_print("====================================================");     
-  
+  log_print("Click 'Edit...' for more info. \\====================================================");       
     
   s_program_old = s_program;
   update_program(s_program - 1, 0, 1);
@@ -390,7 +400,7 @@ filename:2,avatar.png
   
   function rand_int(x) (
     min(floor(rand(x + 1)), x);  
-  );
+  );  
   
   ///////// PROCESS INCOMING MIDI /////////
   buf = 10000;
@@ -400,9 +410,9 @@ filename:2,avatar.png
     channel = buf[0] & 15;        
         
     //Program request answer 
-    (recvlen == 15 && event_type == 0xf && buf[1] == 0x7E && buf[2] == s_channel - 1 && buf[3] == 0x06 && buf[4] == 0x02 &&
-    buf[5] == 0x42 && buf[6] == 0x44 && buf[7] == 0x01 && buf[8] == 00 && buf[7] == 00
-    && buf[9] == 0x01 && buf[10] == 0x00 && buf[11] == 0x0E && buf[12] ==  0x00) ? (    
+    (recvlen == 15 && event_type == 0xf && buf[1] == 0x7E && buf[2] == s_channel - 1 &&
+    buf[3] == 0x06 && buf[4] == 0x02 && buf[5] == 0x42 && buf[6] == 0x44 && buf[7] == 0x01 &&
+    buf[8] == 00 && buf[9] == 00 && buf[10] == 0x01 && buf[11] == 0x00 && buf[12] == 0x0E && buf[13] == 0x00) ? (    
       id = program_request_id;
       update_sliders = program_request_update_sliders;
       send_twice = program_request_send_twice;
@@ -419,7 +429,6 @@ filename:2,avatar.png
       send[9] = 0xf7;     
       midisend_buf(10,send,10);               
       mem_program_request_send_twice[id] = send_twice;
-      program_request = update_sliders;
       mem_midi_event_indicator[MIDI_EVENT_OUT] = 1;
     ) : (
     //Program Dump
@@ -436,14 +445,17 @@ filename:2,avatar.png
       
       i = 0;
       #temp = buf_sub_str(buf, offset, 4);
-      (strcmp(#temp,  "PROG") == 0) ? (                      
+      (strcmp(#temp,  "PROG") == 0) ? (      
+              
+        // Cancel potential error message        
         program_request = 0;
         program_request_timer = 0;
-        //sprintf(#temp,"%f",rand(5));
+        //
+        
         offset += 4;
         
-        #temp = "";
-        
+        // Extract name
+        #temp = "";        
         last_non_w = 0;
         h = 0;
         valid = 0;
@@ -454,8 +466,7 @@ filename:2,avatar.png
             valid += 1;
           ); 
           h += 1;
-        );             
-        
+        );                     
         strcpy(#temp2, #temp);  
         #temp = strcpy_substr(#temp, #temp2, 0, last_non_w);
            
@@ -608,8 +619,7 @@ filename:2,avatar.png
         before sending all the sliders back to it.
         (precision consistency, non-updated sliders, etc...)  
       */
-      send_cc_delay = 1;
-      send_cc_timer = srate * .1;
+      delayed_cc_send();
   
  
       i = 1;
@@ -663,8 +673,14 @@ filename:2,avatar.png
   /////////////////////////////////////////
   
   // Buttons
-  (mem_button_clicked[BUTTON_GET]) ? update_program(s_program -  1, 1, 1);
-  (mem_button_clicked[BUTTON_SEND]) ? update_program(s_program - 1, 0, 1);    
+  (mem_button_clicked[BUTTON_GET]) ? (
+    log_print("Requesting program...");
+    update_program(s_program -  1, 1, 1);
+  );
+  (mem_button_clicked[BUTTON_SEND]) ? (
+    log_print("Sending all CC.");
+    update_program(s_program - 1, 0, 1);    
+  );
   (mem_button_clicked[BUTTON_MUTATE]) ? (
     update_cc_param(vco1_wave_cc, min(2, max(0, s_vco1_wave + rand_int(2) - 1)));
     update_cc_param(vco1_shape_cc, min(127, max(0, s_vco1_shape + rand_int(10) - 5)));          
@@ -759,6 +775,9 @@ filename:2,avatar.png
   (play_state && !last_play_state) ? (
     on_playback_start();
   );
+  (!play_state && last_play_state) ? (
+    log_print("Stopped.");
+  );
   last_play_state = play_state;
   
   // Repeat a program request (seems to be necessary when program number is >~64 for some reason)  
@@ -790,7 +809,7 @@ filename:2,avatar.png
   (program_request) ? (
     program_request_timer += samplesblock;
     (program_request_timer > srate) ? (
-      log_print("ERROR: PROGRAM REQUEST FAILED! Make sure this track is armed and MIDI input is enabled on all channels. Enable Tx/Rx MIDI in the global settings of your synth.");
+      log_print(sprintf(#, "ERROR: PROGRAM REQUEST FAILED! \\> Synth on channel %d is not responding to SysEx msg. \\> Make sure everything is set up properly. \\> Click 'Edit...' for more info. \\====================================================", s_channel));
       program_request_timer = 0;
       program_request = 0;
     );
@@ -991,6 +1010,7 @@ filename:2,avatar.png
           off = 0;
           premature_break = 0;
           line_off = 0;
+          line_broken_by_newline_character = 0;
           local_line_breaks = 0;
           #broken_line = "";
          
@@ -1003,7 +1023,8 @@ filename:2,avatar.png
                 j = 0;
                 stop_reading = 0;
                 while (!stop_reading && j <= len)(
-                  ((line_off + j) > max_len) ? (                  
+                  line_broken_by_newline_character = (str_getchar(#line, off + j) == '\\');
+                  ((line_off + j) > max_len || line_broken_by_newline_character) ? (                  
                     premature_break = 1;                                      
                     stop_reading = 1;              
                   );
@@ -1018,11 +1039,15 @@ filename:2,avatar.png
             );
             
             // Place a line break
-            ((line_off > max_len || premature_break)) ? (              
+            ((line_off > max_len || premature_break) && str_getchar(#line, off) != '=') ? (              
               line_off = 0;
               local_line_breaks += 1;
               premature_break = 0;
               sprintf(#broken_line, "%s\n", #broken_line);
+              (line_broken_by_newline_character) ? (                          
+                off += 1;
+                line_off += 1;
+              );
             ); 
                         
             sprintf(#broken_line, "%s%c", #broken_line, str_getchar(#line, off));
@@ -1037,6 +1062,8 @@ filename:2,avatar.png
           gfx_y -= message_vertical_offset;
           
           off = 0;
+          alt_colour = (i % 2 == 0);
+          
           loop(strlen(#broken_line), 
             char = str_getchar(#broken_line, off);
             (char == '\n') ? (
@@ -1070,8 +1097,8 @@ filename:2,avatar.png
               gfx_x = old_gfx_x;
               gfx_y = old_gfx_y;
               gfx_mode = 1;
-              gfx_set(.9, .9, 1., .9);
-              (message_is_error) ? gfx_set(1, .8, .86, 1.25);
+              gfx_set(.9  - .15 * alt_colour, .9 + .15 * alt_colour, 1., .9);
+              (message_is_error) ? gfx_set(1 - .05 * alt_colour, .8 + .05 * alt_colour, .86, 1.25);
               gfx_drawchar(char);
               gfx_mode = 0;
             );

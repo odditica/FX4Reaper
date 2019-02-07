@@ -1,0 +1,239 @@
+[33mcommit dfde89a8cdd0c565c49c799cef6d78c2524a6552[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Thu Feb 7 20:05:08 2019 +0100
+
+    JSFX: Program request parameter cleanup.
+
+[33mcommit 2d325730e3188096a5e653e4e6ca166e19e43152[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Thu Feb 7 00:44:22 2019 +0100
+
+    JSFX: No longer sending program request when not necessary, added panic button.
+
+[33mcommit be346d0885e3f1aaa253b413b23972750eff7c76[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Wed Feb 6 23:57:51 2019 +0100
+
+    JSFX: Fixed program request timing issues (waiting for sysex answer).
+
+[33mcommit 9e58b150f41235a3f34facc34cbeafbb2e853ae9[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Tue Feb 5 23:21:24 2019 +0100
+
+    JSFX: Finished header comment.
+
+[33mcommit 6da6bae5f22af7a0cdc929622ddc8e7744d7d680[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Tue Feb 5 21:59:10 2019 +0100
+
+    Fixed logging, cleanup, commenting, constants.
+
+[33mcommit 1900c04a09213f3c162a273498ff3bac17c0d8bf[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Sun Feb 3 23:55:45 2019 +0100
+
+    JSFX: Cleanup, comments, fixed memory offsets.
+
+[33mcommit 7afbc57e5b947b4ed123c67c7835436e29439adc[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Sat Feb 2 23:51:21 2019 +0100
+
+    JSFX: Cleanup, comments, setup guide.
+
+[33mcommit 5a22d9f0edccf76a81159984b62200bf6cc9e617[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Fri Feb 1 01:10:28 2019 +0100
+
+    JSFX: Fixed button tint, rewrote program request error message.
+
+[33mcommit e014ad0db2886976be28abb006c8e10e4d87e1eb[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Thu Jan 31 23:20:21 2019 +0100
+
+    JSFX: Additional PC fixes, UI tweaks and cleanup. Added a secret.
+
+[33mcommit 0cbb55e0b29366b9d77dd0061482ec388e591cdd[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Wed Jan 30 23:48:57 2019 +0100
+
+    JSFX: More program request bugfixing, cleanup in progress.
+
+[33mcommit 039bf774decb6061bd0b97fc24bf41cdb23785bb[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Wed Jan 30 03:19:11 2019 +0100
+
+    JSFX: Fixed program requests on effect load and timing issues relating to sending CC right after receiving SysEx dump.
+
+[33mcommit 9338c7256ae9aafa9fa51ea120cd68e63521a676[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Tue Jan 29 23:22:22 2019 +0100
+
+    JSFX: Fixed button panel redraw on resize, improved responsiveness.
+
+[33mcommit 6c61ffc610baa35524912d87f982e2b4f6c2cdf2[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Mon Jan 28 23:54:13 2019 +0100
+
+    JSFX: Added MIDI communication indicators, optimised button redrawing. Almost there.
+
+[33mcommit 5e2fcb54a2ba1da121064a10eb4576ed41e6cdd7[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Mon Jan 28 12:57:36 2019 +0100
+
+    JSFX: Fixed SysEx MIDI channel filtering.
+
+[33mcommit 21c855e1ea01c24a22549c7a0abbeae96480688f[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Sun Jan 27 23:42:43 2019 +0100
+
+    JSFX: Converted to snake_case, formatting, fixed MIDI channel selection.
+
+[33mcommit a71e100a164205b0bda1fe535bcee04947678e90[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Sat Jan 26 23:31:28 2019 +0100
+
+    JSFX: Prolonged program request error message delay, fixed VCO2 slider CC.
+
+[33mcommit 24c78425436c8d9d971f383e453b087b688d1aa0[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Sat Jan 26 01:40:08 2019 +0100
+
+    JSFX: Sending CC on init, intro message print.
+
+[33mcommit 9a240a4fc4b6227da108e0dc484c03ce8e2c79f3[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Fri Jan 25 19:24:37 2019 +0100
+
+    JSFX: All loop indexers made unique.
+
+[33mcommit a52d6cc52185c1ac0732eba69f14c49dbb57f89d[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Thu Jan 24 23:56:13 2019 +0100
+
+    JSFX: Added parameter mutate button.
+
+[33mcommit e1fea2d067f05242152e862c4decb1e477eac178[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Wed Jan 23 21:45:47 2019 +0100
+
+    Fixed prog knob requests not updating correctly if >64.
+
+[33mcommit c0605353273c0d4b820d5ded9af27fb6e5e93de9[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Tue Jan 22 18:03:22 2019 +0100
+
+    JSFX: Fixed line breaking, added error highlighting.
+
+[33mcommit 726f5a9c52113ed1b382a6434331813e6f4f3b6a[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Mon Jan 21 01:26:14 2019 +0100
+
+    JSFX: Any CC now blocks PC.
+
+[33mcommit 4040cf168cd32491196bb7abd1dad2b1695f0690[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Sun Jan 20 23:56:03 2019 +0100
+
+    JSFX: Finished buttons, added console gradient.
+
+[33mcommit ce2b93e925997abd535342ecc7ddc1b5c980d5b9[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Sat Jan 19 23:58:54 2019 +0100
+
+    JSFX: Button positioning.
+
+[33mcommit 1544d54ce3c04a2fced696b966183bd05f4f68ca[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Fri Jan 18 23:57:58 2019 +0100
+
+    JSFX: Basic button logic.
+
+[33mcommit 1c9011bddfe076d283399fc6a9e65010054d53f0[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Thu Jan 17 23:26:35 2019 +0100
+
+    JSFX: Init block no longer triggered on playback. Log responses to window size.
+
+[33mcommit 65bb984400f249b2d2b1bf061c5b4d34da80797a[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Wed Jan 16 23:49:59 2019 +0100
+
+    JSFX: Added repeated line counters.
+
+[33mcommit 35299dd36cfc1aa2a6176cead7d8d221a458931d[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Wed Jan 16 04:45:56 2019 +0100
+
+    JSFX: Implemented message logging and line breaking.
+
+[33mcommit 3a370f406ad9d95c27d9c10a62b2a594c35e177f[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Tue Jan 15 20:13:54 2019 +0100
+
+    JSFX: Tightened dropdown slider behaviour.
+
+[33mcommit 4ae7818cf3edfaf450cb4735c1fe7070feb8074c[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Mon Jan 14 20:03:09 2019 +0100
+
+    Fixed program name decoding in JS and utils, added auto-sync settings in JS.
+
+[33mcommit 2e228504b6a785ca22b5246d6d2e753d1e202a4b[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Mon Jan 14 05:12:17 2019 +0100
+
+    Buffer offsets no longer hardcoded, incremental seeking implemented instead. Automatic patch requesting fully functional, in utils and JS. Win.
+
+[33mcommit ed03abd4ee30ffa565d7ee096573df14e86f57f5[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Sun Jan 13 20:04:47 2019 +0100
+
+    Fixed SysEx decoding in plugin, documenting program dump requests.
+
+[33mcommit 5e2b7f4dbb32150eb16ba3fcb216a9c8e1f19869[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Fri Jan 11 23:52:13 2019 +0100
+
+    Shell script now synchronises data between repo and Reaper folder. Added background scrolling to UI.
+
+[33mcommit 69cf8b464ca9abe65332085e2680f66804f98bd8[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Fri Jan 11 22:03:01 2019 +0100
+
+    Added first graphical assets, started working on UI.
+
+[33mcommit 5875fe4b4a4d3011d365f68bf913edc0b787b4cd[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Thu Jan 10 23:50:17 2019 +0100
+
+    JSFX SySex implementation now fully working, patch implemented as a class in message decoder Python script.
+
+[33mcommit b140db8e06ed4e713eeb90266dfba3f0f285ec99[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Thu Jan 10 17:30:32 2019 +0100
+
+    Finished decoding base program parameters.
+
+[33mcommit 53895dd434d0361093fb6d96c3ef852c897d32d3[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Thu Jan 10 17:28:42 2019 +0100
+
+    Utils cleanup, converted to PyCharm project.
+
+[33mcommit 8e8261dc4a5569f55e8c73b43cd09308c44200cf[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Wed Jan 9 20:17:44 2019 +0100
+
+    Utils cleanup, converted to PyCharm project.
+
+[33mcommit 398ff81a32c1e598b9cabd3e3bb9cb13a49b3139[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Wed Jan 9 20:16:56 2019 +0100
+
+    Utils cleanup, converted to PyCharm project.
+
+[33mcommit 25c91100c8f05b8a44cff22a59071b13b2a73c5c[m
+Author: Jan Vorisek <vorisek.jan@outlook.com>
+Date:   Wed Jan 9 18:34:33 2019 +0100
+
+    Test commit, please ignore.
