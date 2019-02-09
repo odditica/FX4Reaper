@@ -4,6 +4,8 @@
 
 Written by [Blokatt](https://twitter.com/blokatt).
 
+### [Download (v1.0)](https://github.com/Blokatt/FX4Reaper/releases/tag/MonoCtrl)
+
 ![](/monoctrl/monoctrlPreview.gif)
 
 Features:
