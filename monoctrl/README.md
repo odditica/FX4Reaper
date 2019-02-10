@@ -13,9 +13,9 @@ Features:
 - Two-way CC/PC sync
 - Automatic preset requesting via SysEx
 - Parameter randomisation/mutation
-- Local preset support
-- Various MIDI passthrough options
-- MIDI channel selection (including SysEx safety)
+- User preset support
+- MIDI passthrough options
+- SysEx-safe MIDI channel selection
 
 -----
 
