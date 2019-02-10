@@ -394,9 +394,8 @@ filename:2,avatar.png
   log_print("Monologue SOUND (low precision)");
   log_print("Enable input monitoring and arm this track.");   
   log_print("Click 'Edit...' for more info. \\====================================================");       
-    
   s_program_old = s_program;
-  update_program(s_program - 1, 0, 1);
+  init_send = 1;
   
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -788,7 +787,11 @@ filename:2,avatar.png
     k += 1;
   );
               
-    
+  (init_send) ? (
+    update_program(s_program - 1, 0, 1);   
+    init_send = 0;
+  );
+  
   // Delayed CC sending (synth might block incoming CC when loading a preset)
   (send_cc_delay) ? (
     (!send_cc_timer) ? (
@@ -819,6 +822,7 @@ filename:2,avatar.png
   
   // Auto-send program request
   (s_program != s_program_old) ? (  
+    log_print("diff");
     program_change_delay = (srate * .1) * (s_send_pc_on_init != 2);
     program_change_waiting = 1;    
     program_change_params = !cc_changed && (s_send_pc_on_init != 2);
