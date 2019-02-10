@@ -684,10 +684,12 @@ filename:2,avatar.png
       slider_automate(get_slider(program_cc));                   
       mem_midi_event_indicator[MIDI_EVENT_IN] = 1;
     ) : ( // Passthrough, clock is blocked by default                 
-    (buf[0] != 0xF8 && (s_block_midi_passthrough == 0) || (s_block_midi_passthrough == 1 && play_state  == 1)) ? (
-      midisend_buf(offset,buf,recvlen);               
+    (buf[0] != 0xF8) ? (
       mem_midi_event_indicator[MIDI_EVENT_IN] = 1;
-      mem_midi_event_indicator[MIDI_EVENT_OUT] = 1;
+      ((s_block_midi_passthrough == 0) || (s_block_midi_passthrough == 1 && play_state  == 1)) ? (
+        midisend_buf(offset,buf,recvlen);                   
+        mem_midi_event_indicator[MIDI_EVENT_OUT] = 1;
+      ); 
     );
     );
     );
