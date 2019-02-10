@@ -3,7 +3,8 @@
 **MonoCtrl** _[monocontrol]_  is a control interface for the Korg Monologue synthesiser.
 
 Written by [Blokatt](https://twitter.com/blokatt).
-### [Download (v1.0)](https://github.com/Blokatt/FX4Reaper/releases/tag/MonoCtrl)
+
+### Download (v1.0): [itch.io](https://blokatt.itch.io/monoctrl),  [GitHub](https://github.com/Blokatt/FX4Reaper/releases/tag/MonoCtrl)
 
 ![](/monoctrl/monoctrlPreview.gif)
 
@@ -13,7 +14,7 @@ Features:
 - Automatic preset requesting via SysEx
 - Parameter randomisation/mutation
 - Local preset support
-- Various MIDI passhrough options
+- Various MIDI passthrough options
 - MIDI channel selection (including SysEx safety)
 
 -----
