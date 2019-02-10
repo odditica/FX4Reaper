@@ -822,7 +822,6 @@ filename:2,avatar.png
   
   // Auto-send program request
   (s_program != s_program_old) ? (  
-    log_print("diff");
     program_change_delay = (srate * .1) * (s_send_pc_on_init != 2);
     program_change_waiting = 1;    
     program_change_params = !cc_changed && (s_send_pc_on_init != 2);
