@@ -21,7 +21,11 @@ Features:
 
 Installation:
 -----
+**On a non-portable Windows installation of Reaper:**
 - Simply run ***install_windows.bat*** *or* create a new directory called ***blokatt*** in your ***Effects*** folder (usually found in *%appdata%/Reaper/*) and copy the ***monoctrl*** folder into it.
+
+**Anywhere else:**
+- In the ***Effects*** folder of your Reaper installation, create a new directory called ***blokatt*** and copy the ***monoctrl*** folder there.
 
 Setup guide:
 -----
