@@ -11,7 +11,7 @@ Written by [@blokatt](https://twitter.com/blokatt)
 
 ---
 
-# Installation (Windows)
+# Installation (Windows, non-portable version of Reaper)
 
 - Install all effects -> run ***install_all_windows.bat***
 - Install a single effect -> navigate to that effect's directory and run ***install_windows.bat*** 
