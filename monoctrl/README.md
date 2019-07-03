@@ -4,7 +4,7 @@
 
 Written by [Blokatt](https://twitter.com/blokatt).
 
-### Download (v1.0): [itch.io](https://blokatt.itch.io/monoctrl),  [GitHub](https://github.com/Blokatt/FX4Reaper/releases/tag/MonoCtrl)
+### Download (v1.1): [itch.io](https://blokatt.itch.io/monoctrl),  [GitHub](https://github.com/Blokatt/FX4Reaper/releases/tag/MonoCtrl)
 
 ![](/monoctrl/monoctrlPreview.gif)
 
