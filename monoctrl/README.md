@@ -1,4 +1,4 @@
-# MonoCtrl 1.0
+# MonoCtrl 1.1
 
 **MonoCtrl** _[monocontrol]_  is a control interface for the Korg Monologue synthesiser.
 
@@ -17,6 +17,16 @@ Features:
 - MIDI passthrough options
 - SysEx-safe MIDI channel selection
 
+-----
+
+Changelog:
+-----
+  - **1.1** (03/07/19)
+      - Fixed incompatibility issues with version 2.0 of the Monologue firmware, **IT IS HIGHLY RECOMMENDED THAT YOU INSTALL THIS UPDATE AS WELL** as the previous version may no longer work with this plugin!   
+        https://www.korg.com/us/support/download/software/0/733/3529/
+        
+  - 1.0 (09/02/19)
+      - Initial release
 -----
 
 Installation:

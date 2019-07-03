@@ -4,7 +4,7 @@ desc: MonoCtrl (Blokatt)
 
 /*
   .-============-.
-  | MonoCtrl 1.0 |
+  | MonoCtrl 1.1 |
   .-============-.
   .______________.
   
@@ -12,6 +12,16 @@ desc: MonoCtrl (Blokatt)
   
   Written by Blokatt (Jan Vorisek)
   (http://www.blokatt.net/, jan@blokatt.net, @blokatt)
+  
+  Changelog:
+    1.1 (03/07/19)
+        - Fixed incompatibility issues with version 2.0 of the Monologue firmware,
+          IT IS HIGHLY RECOMMENDED THAT YOU INSTALL THIS UPDATE AS WELL
+          as the previous version may no longer work with this plugin!
+          https://www.korg.com/us/support/download/software/0/733/3529/
+          
+    1.0 (09/02/19)
+        - Initial release
     
   Setup for this track:
   ====================
@@ -111,7 +121,7 @@ filename:2,avatar.png
 //////////////////// - A RATHER LARGE SECTION SEPARATOR. - //////////////////////
 /////////////////////////////////////////////////////////////////////////////////
 @init    
-  #VERSION = "1.0";
+  #VERSION = "1.1";
 
   // Print a log message
   function log_print(str) (
@@ -245,10 +255,21 @@ filename:2,avatar.png
   function update_program(id, update_sliders, send_twice) (  
     send_pc_to_device();
     (update_sliders) ? (
-      midisend_str(0, "\xf0\x7E\x7F\x06\x01\xf7"); 
+      send[0] = 0xf0;
+      send[1] = 0x42;
+      send[2] = 0x30 | (s_channel - 1);
+      send[3] = 0x00;
+      send[4] = 0x01;
+      send[5] = 0x44;
+      send[6] = 0x1c;
+      send[7] = id;
+      send[8] = 0x00;
+      send[9] = 0xf7;     
+      midisend_buf(10,send,10);    
+
       program_request_id = id;
       program_request_update_sliders = update_sliders;
-      program_request_send_twice = send_twice;      
+      mem_program_request_send_twice[id] = send_twice;
     ) : ( 
       delayed_cc_send();      
     );
@@ -433,30 +454,8 @@ filename:2,avatar.png
     event_type = buf[0] >> 4;
     channel = buf[0] & 15;        
         
-    //Program request answer 
-    (recvlen == 15 && event_type == 0xf && buf[1] == 0x7E && buf[2] == s_channel - 1 &&
-    buf[3] == 0x06 && buf[4] == 0x02 && buf[5] == 0x42 && buf[6] == 0x44 && buf[7] == 0x01 &&
-    buf[8] == 00 && buf[9] == 00 && buf[10] == 0x01 && buf[11] == 0x00 && buf[12] == 0x0E && buf[13] == 0x00) ? (    
-      id = program_request_id;
-      update_sliders = program_request_update_sliders;
-      send_twice = program_request_send_twice;
-      send = 1000;
-      send[0] = 0xf0;
-      send[1] = 0x42;
-      send[2] = 0x30 | (s_channel - 1);
-      send[3] = 0x00;
-      send[4] = 0x01;
-      send[5] = 0x44;
-      send[6] = 0x1c;
-      send[7] = s_program - 1;
-      send[8] = 0x00;
-      send[9] = 0xf7;     
-      midisend_buf(10,send,10);               
-      mem_program_request_send_twice[id] = send_twice;
-      mem_midi_event_indicator[MIDI_EVENT_OUT] = 1;
-    ) : (
     //Program Dump
-    (recvlen >= 518 && event_type == 0xf && (buf[2] & 15) == s_channel - 1) ? (                               
+    (recvlen >= 518 && event_type == 0xf && (buf[2] & 15) == s_channel - 1) ? (       
       offset = 6;      
       program = -1;      
       (buf[offset] == 0x4c) ? (
@@ -621,6 +620,7 @@ filename:2,avatar.png
         );
         
         (program != -1) ? (
+          
           (mem_program_request_send_twice[program]) ?  echo_program_request = 5;
           // this is how i fix timing issues
           s_program = program + 1;
@@ -693,8 +693,7 @@ filename:2,avatar.png
     );
     );
     );            
-    ); 
-    );
+    );   
   );    
   send_cc_to_device();  // Send slider changes
   /////////////////////////////////////////
@@ -775,7 +774,6 @@ filename:2,avatar.png
   
   /////
   
-  
   /*  
   Hack to detect local preset change:
   Don't auto-update program if any knobs have been moved during this block.  
@@ -813,7 +811,7 @@ filename:2,avatar.png
   last_play_state = play_state;
   
   // Repeat a program request (seems to be necessary when program number is >~64 for some reason)  
-  (echo_program_request > 0) ? (
+  (echo_program_request > 0) ? (    
     (echo_program_request == 1) ? (
       update_program(s_program - 1, !(mem_program_request_send_twice[s_program - 1] >> 1), 0);      
     );
@@ -829,8 +827,7 @@ filename:2,avatar.png
   (program_change_waiting) ? (
     program_change_delay = max(0, program_change_delay - samplesblock);
     (program_change_delay == 0) ? (
-      
-      update_program(s_program - 1, program_change_params, 1);                      
+      update_program(s_program - 1, program_change_params, 1);                                     
       program_change_waiting = 0;
     );
   );
